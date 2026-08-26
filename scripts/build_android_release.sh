@@ -51,6 +51,7 @@ CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --clean --platform android --no-insta
 [[ -f android/gradlew ]] || fail "O prebuild não gerou android/gradlew."
 grep -q "mupen64plus-core" android/settings.gradle || fail "Os módulos do Mupen64Plus-AE não foram incluídos no Gradle."
 grep -q "android.packagingOptions.pickFirsts=.*libc++_shared" android/gradle.properties || fail "A regra de empacotamento C++ não foi aplicada."
+grep -q "^newArchEnabled=false" android/gradle.properties || fail "A arquitetura legada necessária ao NDK 26.1 não foi aplicada."
 
 if [[ "$PREPARE_ONLY" == true ]]; then
   printf '\nPrebuild e auditoria concluídos. Nenhum APK foi compilado por --prepare-only.\n'

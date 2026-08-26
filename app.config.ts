@@ -46,7 +46,9 @@ const config: ExpoConfig = {
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
+  // SDK 54 ainda permite a arquitetura legada. Ela evita a compilação Fabric
+  // que exige std::format, indisponível no NDK 26.1 fixado pelo Mupen64Plus-AE.
+  newArchEnabled: false,
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,

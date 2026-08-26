@@ -22,7 +22,8 @@ class N64CoreModule : Module() {
     }
 
     AsyncFunction("launchSession") { romUri: String, gameId: String, profileId: String ->
-      val snapshot = N64SessionController.prepare(romUri, gameId, profileId)
+      val context = requireNotNull(appContext.reactContext)
+      val snapshot = N64SessionController.prepare(context, romUri, gameId, profileId)
       sendEvent("onSessionState", snapshot)
       if (!Mupen64Bridge.isLinked) {
         throw IllegalStateException(Mupen64Bridge.unavailableMessage)

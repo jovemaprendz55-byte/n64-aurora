@@ -1,0 +1,43 @@
+const { withAppBuildGradle, withProjectBuildGradle, withSettingsGradle } = require("@expo/config-plugins");
+
+const MODULES = [
+  "mupen64plus-core",
+  "mupen64plus-audio-android",
+  "mupen64plus-input-android",
+  "mupen64plus-rsp-hle",
+  "mupen64plus-video-gln64",
+  "ae-bridge",
+];
+
+const withMupen64plusAe = (config) => {
+  config = withProjectBuildGradle(config, (project) => {
+    if (project.modResults.contents.includes("ndkVersion = \"26.1.10909125\"")) return project;
+    project.modResults.contents = project.modResults.contents.replace(
+      "buildscript {",
+      "buildscript {\n  ext { ndkVersion = \"26.1.10909125\" }",
+    );
+    return project;
+  });
+
+  config = withSettingsGradle(config, (settings) => {
+    if (settings.modResults.contents.includes("mupen64plus-core")) return settings;
+
+    const inclusions = MODULES.map(
+      (name) => `include ':${name}'\nproject(':${name}').projectDir = new File(rootDir, '../vendor/mupen64plus-ae/${name}')`,
+    ).join("\n");
+    settings.modResults.contents += `\n// N64 Aurora: módulos GPL-3.0 do Mupen64Plus-AE (commit 25cfb7a)\n${inclusions}\n`;
+    return settings;
+  });
+
+  config = withAppBuildGradle(config, (app) => {
+    if (app.modResults.contents.includes("implementation project(':mupen64plus-core')")) return app;
+
+    const dependencies = MODULES.map((name) => `    implementation project(':${name}')`).join("\n");
+    app.modResults.contents += `\n// N64 Aurora: inclui core, plugins e ae-bridge do Mupen64Plus-AE\ndependencies {\n${dependencies}\n}\n`;
+    return app;
+  });
+
+  return config;
+};
+
+module.exports = withMupen64plusAe;

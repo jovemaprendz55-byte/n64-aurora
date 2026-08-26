@@ -17,3 +17,6 @@
 - [x] Otimizar os ícones de launcher, splash e favicon para permitir o salvamento do projeto.
 - [x] Criar a base Android nativa para sessão, superfície de vídeo e entrada do núcleo Mupen64Plus-AE.
 - [x] Validar o autolinking Android e documentar a recompilação necessária para a ponte N64Core.
+- [x] Incorporar o código-fonte Mupen64Plus-AE e configurar sua compilação JNI para Android.
+- [x] Mapear os controles virtuais para a ABI do plugin mupen64plus-input-android.
+- [ ] Compilar e validar a sessão completa em um build Android com SDK e NDK 26.1.

@@ -36,4 +36,5 @@
 - [x] Restaurar a Nova Arquitetura exigida pelo Reanimated e migrar o toolchain para NDK 27.2, compatível com `std::format`.
 - [x] Gerar o APK release arm64-v8a pelo GitHub Actions e verificar a integridade do artefato baixado.
 - [x] Corrigir a detecção do módulo Android N64Core no APK: o autolinking e as bibliotecas estavam presentes, mas a SurfaceView era consultada pelo registro incorreto sob a Nova Arquitetura.
-- [ ] Recompilar e instalar um APK que reconheça a sessão N64Core antes de validar a execução de ROM própria.
+- [x] Recompilar um APK que reconheça a sessão N64Core, com autolinking, SurfaceView Expo e N64CoreModule verificados no artefato.
+- [ ] Instalar o APK corrigido no aparelho e abrir uma ROM própria para validar carregamento do núcleo, vídeo, áudio e controles.

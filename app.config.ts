@@ -46,9 +46,9 @@ const config: ExpoConfig = {
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  // SDK 54 ainda permite a arquitetura legada. Ela evita a compilação Fabric
-  // que exige std::format, indisponível no NDK 26.1 fixado pelo Mupen64Plus-AE.
-  newArchEnabled: false,
+  // Reanimated 4 requer a Nova Arquitetura. O NDK r27.2 fornece o suporte
+  // C++20 necessário para o std::format usado pelo React Native/Fabric.
+  newArchEnabled: true,
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
@@ -112,7 +112,7 @@ const config: ExpoConfig = {
           minSdkVersion: 28,
           compileSdkVersion: 36,
           targetSdkVersion: 36,
-          ndkVersion: "26.1.10909125",
+          ndkVersion: "27.2.12479018",
         },
       },
     ],

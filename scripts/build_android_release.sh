@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly REQUIRED_NDK_VERSION="26.1.10909125"
+readonly REQUIRED_NDK_VERSION="27.2.12479018"
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PREPARE_ONLY=false
 
@@ -19,7 +19,7 @@ Pré-requisitos:
   - Node.js 22+ e pnpm 9+
   - Java compatível com o projeto Android
   - Android SDK em ANDROID_SDK_ROOT ou ANDROID_HOME
-  - Android NDK 26.1.10909125 em <SDK>/ndk/26.1.10909125
+  - Android NDK 27.2.12479018 em <SDK>/ndk/27.2.12479018
 EOF
 }
 
@@ -51,7 +51,7 @@ CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --clean --platform android --no-insta
 [[ -f android/gradlew ]] || fail "O prebuild não gerou android/gradlew."
 grep -q "mupen64plus-core" android/settings.gradle || fail "Os módulos do Mupen64Plus-AE não foram incluídos no Gradle."
 grep -q "android.packagingOptions.pickFirsts=.*libc++_shared" android/gradle.properties || fail "A regra de empacotamento C++ não foi aplicada."
-grep -q "^newArchEnabled=false" android/gradle.properties || fail "A arquitetura legada necessária ao NDK 26.1 não foi aplicada."
+grep -q "^newArchEnabled=true" android/gradle.properties || fail "A Nova Arquitetura exigida pelo Reanimated não foi aplicada."
 
 if [[ "$PREPARE_ONLY" == true ]]; then
   printf '\nPrebuild e auditoria concluídos. Nenhum APK foi compilado por --prepare-only.\n'

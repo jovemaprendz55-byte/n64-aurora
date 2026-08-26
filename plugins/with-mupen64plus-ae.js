@@ -8,6 +8,7 @@ const MODULES = [
   "mupen64plus-video-gln64",
   "ae-bridge",
 ];
+const NDK_VERSION = "27.2.12479018";
 
 const withMupen64plusAe = (config) => {
   config = withGradleProperties(config, (properties) => {
@@ -22,10 +23,10 @@ const withMupen64plusAe = (config) => {
   });
 
   config = withProjectBuildGradle(config, (project) => {
-    if (project.modResults.contents.includes("ndkVersion = \"26.1.10909125\"")) return project;
+    if (project.modResults.contents.includes(`ndkVersion = "${NDK_VERSION}"`)) return project;
     project.modResults.contents = project.modResults.contents.replace(
       "buildscript {",
-      "buildscript {\n  ext { ndkVersion = \"26.1.10909125\" }",
+      `buildscript {\n  ext { ndkVersion = "${NDK_VERSION}" }`,
     );
     return project;
   });

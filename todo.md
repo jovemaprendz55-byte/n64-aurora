@@ -33,3 +33,4 @@
 - [ ] Acionar e acompanhar a primeira execução do workflow `Android Release APK` no GitHub Actions.
 - [x] Corrigir a configuração do workflow após a primeira execução falhar por versões conflitantes do pnpm.
 - [x] Desabilitar a Nova Arquitetura no build Android SDK 54 para evitar a falha de `std::format` com o NDK 26.1 exigido pelo núcleo nativo.
+- [x] Restaurar a Nova Arquitetura exigida pelo Reanimated e migrar o toolchain para NDK 27.2, compatível com `std::format`.

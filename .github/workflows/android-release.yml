@@ -54,9 +54,9 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0" \
             "cmake;3.22.1" \
-            "ndk;26.1.10909125"
+            "ndk;27.2.12479018"
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
 
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile

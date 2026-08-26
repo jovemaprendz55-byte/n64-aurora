@@ -5,7 +5,7 @@
 
 ## Conclusão executiva
 
-Os **dois bloqueios técnicos confirmados** foram corrigidos nesta revisão: cada módulo recebeu namespace único e a variante release foi fixada para as dependências nativas vendorizadas. Também foram criados os manifests mínimos dos módulos e centralizada a seleção de `libc++_shared.so`. A publicação parada em 1% não produz logs acessíveis neste ambiente, portanto ainda não é possível atribuir esse estado a uma causa remota específica.
+Os bloqueios estáticos de namespace, variante release e seleção de `libc++_shared.so` foram corrigidos. A primeira execução no GitHub Actions expôs dois problemas adicionais e reproduzíveis: conflito de declaração do pnpm e ausência de `std::format` no NDK 26.1 usado com React Native/Fabric. O workflow agora usa a versão de pnpm do projeto e NDK `27.2.12479018`, mantendo a Nova Arquitetura exigida pelo Reanimated 4.
 
 | Prioridade | Achado | Evidência | Efeito provável |
 |---|---|---|---|
@@ -19,7 +19,7 @@ Os **dois bloqueios técnicos confirmados** foram corrigidos nesta revisão: cad
 
 ## Evidências verificadas
 
-A configuração Expo resolvida declara **arm64-v8a**, `minSdkVersion 28`, `compileSdkVersion 36`, `targetSdkVersion 36` e NDK `26.1.10909125`. O `settings.gradle` inclui os seis módulos Mupen64Plus-AE e o `app/build.gradle` os declara como dependências. A seleção vendorizada ocupa aproximadamente 25 MB e inclui as bibliotecas de produção arm64 exigidas pelos makefiles: `libEGLLoader.a`, `libSDL2_net.so`, `libhidapi.so`, `libpng.a`, `librcheevos.a`, `libsoundtouch.so` e `libsoundtouch_fp.so`.
+A configuração Expo resolvida declara **arm64-v8a**, `minSdkVersion 28`, `compileSdkVersion 36`, `targetSdkVersion 36` e NDK `27.2.12479018`. O `settings.gradle` inclui os seis módulos Mupen64Plus-AE e o `app/build.gradle` os declara como dependências. A seleção vendorizada ocupa aproximadamente 25 MB e inclui as bibliotecas de produção arm64 exigidas pelos makefiles: `libEGLLoader.a`, `libSDL2_net.so`, `libhidapi.so`, `libpng.a`, `librcheevos.a`, `libsoundtouch.so` e `libsoundtouch_fp.so`.
 
 O problema de namespace foi confirmado na auditoria inicial e corrigido nesta revisão. Cada módulo Android usa seu namespace para as classes geradas `R` e `BuildConfig`; a documentação do Android orienta modificar o namespace para evitar colisões.[1]
 
@@ -34,13 +34,13 @@ O problema de debug também foi confirmado e corrigido. O makefile comum ainda m
 | Gradle/Android SDK local | Bloqueado externamente. | O ambiente não tem `ANDROID_HOME`/`sdk.dir`; nenhuma tarefa de compilação Android completou. |
 | Módulos Mupen64Plus-AE | Aprovados na auditoria estática. | `pnpm audit:native` confirma namespaces únicos, bibliotecas release completas e release forçado. |
 | JNI e runtime | Não comprovado. | A ponte C++ foi escrita e mapeia a API upstream, mas precisa compilar e ser executada em aparelho. |
-| Publicação em 1% | Sem diagnóstico local. | Esse estágio pertence ao serviço de publicação; não há log remoto disponível neste ambiente. |
+| GitHub Actions | Em validação. | O job alcançou a compilação Gradle e registrou as falhas de pnpm, NDK 26.1/Fabric e arquitetura legada; o retry usa pnpm 9.12.0, Nova Arquitetura e NDK 27.2. |
 
 ## Sequência de correção recomendada
 
-Os namespaces exclusivos, a variante release e a seleção única de `libc++_shared.so` já foram aplicados. A próxima validação deve observar se o build remoto utiliza o NDK 26.1 configurado pelo plugin Expo.
+Os namespaces exclusivos, a variante release e a seleção única de `libc++_shared.so` já foram aplicados. A próxima validação deve observar se o build remoto compila todos os módulos com NDK 27.2 e a Nova Arquitetura habilitada.
 
-A próxima validação deve ser feita em máquina com Android SDK + NDK 26.1 instalados, executando `./gradlew :app:assembleRelease --stacktrace`. O primeiro erro Gradle deve ser corrigido antes de qualquer nova publicação. Após isso, o APK precisa ser instalado em Android 16 e testado com uma ROM pertencente ao usuário, verificando renderização, áudio, controles e encerramento de sessão.
+A próxima validação deve ser feita em máquina com Android SDK + NDK 27.2 instalados, executando `./gradlew :app:assembleRelease --stacktrace`. Após um APK bem-sucedido, ele precisa ser instalado em Android 16 e testado com uma ROM pertencente ao usuário, verificando renderização, áudio, controles e encerramento de sessão.
 
 ## Rotina adicionada
 

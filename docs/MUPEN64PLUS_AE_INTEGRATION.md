@@ -14,9 +14,9 @@ O projeto agora inclui uma seleção arm64-v8a do Mupen64Plus-AE no commit fixad
 
 ## Restrições de build
 
-O build foi limitado a `arm64-v8a`, pois apenas as bibliotecas de produção dessa arquitetura foram incorporadas. O plugin também fixa o NDK `26.1.10909125`, versão declarada pela árvore upstream. A configuração Expo mantém Android 16 (`compileSdk`/`targetSdk` 36).
+O build foi limitado a `arm64-v8a`, pois apenas as bibliotecas de produção dessa arquitetura foram incorporadas. O plugin fixa o NDK `27.2.12479018`, compatível com a Nova Arquitetura exigida pelo Reanimated 4 e com o suporte C++20 usado pelo React Native. A configuração Expo mantém Android 16 (`compileSdk`/`targetSdk` 36).
 
-O prebuild, o autolinking, a tipagem, os testes e o lint concluíram sem erros. A compilação Gradle nativa ainda não foi executada neste ambiente porque o Android SDK não está instalado/configurado. Ela deve ser testada em um ambiente Android com SDK + NDK 26.1, antes de distribuir um APK.
+O prebuild, o autolinking, a tipagem, os testes e o lint concluíram sem erros. A compilação Gradle nativa não está disponível neste ambiente porque o Android SDK não está instalado/configurado; o GitHub Actions executa essa validação com SDK + NDK 27.2 antes de distribuir um APK.
 
 ## Licença e fonte correspondente
 

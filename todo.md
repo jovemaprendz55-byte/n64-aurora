@@ -23,3 +23,4 @@
 - [x] Auditar configuração Gradle/NDK, módulo JNI e dependências do Mupen64Plus-AE para identificar bloqueios de compilação.
 - [x] Corrigir namespaces duplicados, variante release e empacotamento C++ dos módulos Mupen64Plus-AE.
 - [x] Criar script automatizado de prebuild e compilação Gradle para release Android.
+- [x] Criar workflow GitHub Actions para gerar APK release como artefato baixável.

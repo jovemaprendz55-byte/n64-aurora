@@ -20,6 +20,8 @@ O prebuild, o autolinking, a tipagem, os testes e o lint concluíram sem erros. 
 
 > Em builds com Nova Arquitetura, a SurfaceView Expo não deve ser validada por `UIManager.getViewManagerConfig("N64Core")`. O Expo Modules API registra a view como um adaptador e a aplicação confirma sua presença por `NativeModules.NativeUnimoduleProxy.viewManagersMetadata.N64Core`. Isso evita diagnosticar incorretamente como ausente um módulo que já está incluído no APK.
 
+> O ae-bridge do upstream contém callbacks opcionais de RetroAchievements. Como o N64 Aurora não integra essa interface Java, o `JNI_OnLoad` limpa a exceção de classe ausente e desativa apenas esses callbacks; a ausência desse recurso não pode impedir o carregamento do núcleo de emulação.
+
 ## Licença e fonte correspondente
 
 O arquivo `vendor/mupen64plus-ae/gpl-license` contém a GPL-3.0 upstream. A distribuição final precisa conservar os avisos de código aberto e disponibilizar o código-fonte correspondente ao commit fixado, incluindo ajustes locais descritos em `VENDOR.md`.[1]

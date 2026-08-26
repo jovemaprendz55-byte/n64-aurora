@@ -649,8 +649,16 @@ extern jint JNI_OnLoad(JavaVM* vm, void* reserved)
 		g_ra_server_error = env->GetStaticMethodID(clazz,
             "onServerError", "(Ljava/lang/String;Ljava/lang/String;)V");
 		g_ra_login_success = env->GetStaticMethodID(clazz,
-            "onLoginSuccess", "(Ljava/lang/String;I)V");
+		    "onLoginSuccess", "(Ljava/lang/String;I)V");
 		env->DeleteLocalRef(clazz);
+	} else {
+		// RetroAchievements não é integrado pelo N64 Aurora. FindClass deixa
+		// NoClassDefFoundError pendente quando esse callback opcional não existe;
+		// sem limpar a exceção, System.loadLibrary falha e bloqueia todo o núcleo.
+		if (env->ExceptionCheck()) {
+			env->ExceptionClear();
+		}
+		LOGW("RetroAchievementsManager ausente; callbacks opcionais desativados.");
 	}
 	return JNI_VERSION_1_6;
 }

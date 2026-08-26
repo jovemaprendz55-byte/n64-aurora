@@ -1,8 +1,9 @@
-import { Platform, UIManager } from "react-native";
+import { NativeModules, Platform } from "react-native";
 
 import N64CoreModule from "@/modules/n64-core/src/N64CoreModule";
 import type { N64SessionSnapshot } from "@/modules/n64-core/src/N64Core.types";
 import type { N64Input } from "@/lib/n64-models";
+import { hasExpoViewManager } from "@/lib/n64-native-registry";
 
 type LaunchRequest = {
   romUri: string;
@@ -14,7 +15,9 @@ const unavailableMessage = "A ponte Android está instalada, mas o núcleo Mupen
 
 export const N64Core = {
   hasNativeModule: () => Boolean(N64CoreModule && Platform.OS !== "web"),
-  hasNativeSurface: () => Platform.OS !== "web" && Boolean(UIManager.getViewManagerConfig("N64Core")),
+  // Expo Modules registra views como ViewManagerAdapter_N64Core. Na Nova Arquitetura,
+  // UIManager.getViewManagerConfig("N64Core") não representa essa view.
+  hasNativeSurface: () => Platform.OS !== "web" && Boolean(N64CoreModule) && hasExpoViewManager(NativeModules, "N64Core"),
   async isAvailable(): Promise<boolean> {
     return N64CoreModule?.isAvailable() ?? false;
   },

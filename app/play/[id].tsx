@@ -11,12 +11,16 @@ import { N64Core } from "@/lib/n64-core";
 import { DEFAULT_CONTROL_LAYOUT, type N64Game } from "@/lib/n64-models";
 import { getGame, loadProfiles, loadSettings, markGamePlayed } from "@/lib/n64-storage";
 
+type NativeBridgeStatus = "ready" | "missing-module" | "missing-surface" | "core-unavailable";
+
 export default function PlayGameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [game, setGame] = useState<N64Game>();
   const [isLaunching, setIsLaunching] = useState(true);
   const [nativeAvailable, setNativeAvailable] = useState(false);
   const [bridgeInstalled, setBridgeInstalled] = useState(false);
+  const [bridgeStatus, setBridgeStatus] = useState<NativeBridgeStatus>("missing-module");
+  const [nativeMessage, setNativeMessage] = useState("");
   const [sessionId, setSessionId] = useState("");
 
   useEffect(() => {
@@ -26,18 +30,36 @@ export default function PlayGameScreen() {
       const settings = await loadSettings();
       const profiles = await loadProfiles();
       const profile = profiles.find((candidate) => candidate.id === settings.activeProfileId) ?? profiles[0];
-      const available = await N64Core.isAvailable();
-      const bridge = N64Core.hasNativeModule() && N64Core.hasNativeSurface();
+      const moduleInstalled = N64Core.hasNativeModule();
+      const surfaceInstalled = N64Core.hasNativeSurface();
+      const bridge = moduleInstalled && surfaceInstalled;
+      const available = bridge && await N64Core.isAvailable();
+      const snapshot = moduleInstalled ? await N64Core.getSnapshot() : undefined;
+      const status: NativeBridgeStatus = !moduleInstalled
+        ? "missing-module"
+        : !surfaceInstalled
+          ? "missing-surface"
+          : available
+            ? "ready"
+            : "core-unavailable";
       let nextSessionId = "";
+      let nextMessage = snapshot?.message ?? "";
       if (selectedGame && available) {
-        const session = await N64Core.launchSession({ romUri: selectedGame.uri, gameId: selectedGame.id, profileId: profile.id });
-        nextSessionId = session.sessionId;
-        await markGamePlayed(selectedGame.id);
+        try {
+          const session = await N64Core.launchSession({ romUri: selectedGame.uri, gameId: selectedGame.id, profileId: profile.id });
+          nextSessionId = session.sessionId;
+          nextMessage = session.message;
+          await markGamePlayed(selectedGame.id);
+        } catch (error) {
+          nextMessage = error instanceof Error ? error.message : "Não foi possível iniciar a sessão nativa.";
+        }
       }
       if (isMounted) {
         setGame(selectedGame);
         setNativeAvailable(available && bridge);
         setBridgeInstalled(bridge);
+        setBridgeStatus(status);
+        setNativeMessage(nextMessage);
         setSessionId(nextSessionId);
         setIsLaunching(false);
       }
@@ -64,9 +86,17 @@ export default function PlayGameScreen() {
           <View style={styles.viewportGrid} />
           {bridgeInstalled ? <N64CoreView sessionId={sessionId} style={StyleSheet.absoluteFill} /> : null}
           {!nativeAvailable ? <View style={styles.videoPlaceholder}>
-            <MaterialIcons name={bridgeInstalled ? "developer-board" : "memory"} size={33} color="#22D3EE" />
-            <Text style={styles.videoTitle}>{bridgeInstalled ? "Ponte Android pronta" : "Módulo nativo não incluído"}</Text>
-            <Text style={styles.videoText}>{bridgeInstalled ? "A SurfaceView foi instalada. Adicione ae-bridge e os plugins Mupen64Plus-AE para renderizar esta ROM." : "Recompile o aplicativo com o módulo N64Core para preparar a superfície e a sessão de emulação."}</Text>
+            <MaterialIcons name={bridgeStatus === "missing-module" ? "memory" : "developer-board"} size={33} color="#22D3EE" />
+            <Text style={styles.videoTitle}>
+              {bridgeStatus === "missing-module" ? "Módulo nativo não incluído" : bridgeStatus === "missing-surface" ? "SurfaceView nativa não registrada" : "Núcleo nativo indisponível"}
+            </Text>
+            <Text style={styles.videoText}>
+              {bridgeStatus === "missing-module"
+                ? "Recompile o aplicativo com o módulo N64Core para preparar a superfície e a sessão de emulação."
+                : bridgeStatus === "missing-surface"
+                  ? "O N64Core foi encontrado no APK, mas os metadados da SurfaceView não foram registrados."
+                  : nativeMessage || "O N64Core foi encontrado no APK, mas o núcleo Mupen64Plus-AE não pôde ser carregado."}
+            </Text>
           </View> : null}
         </View>
 

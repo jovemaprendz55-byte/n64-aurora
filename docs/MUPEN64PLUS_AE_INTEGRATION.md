@@ -18,6 +18,8 @@ O build foi limitado a `arm64-v8a`, pois apenas as bibliotecas de produção des
 
 O prebuild, o autolinking, a tipagem, os testes e o lint concluíram sem erros. A compilação Gradle nativa não está disponível neste ambiente porque o Android SDK não está instalado/configurado; o GitHub Actions executa essa validação com SDK + NDK 27.2 antes de distribuir um APK.
 
+> Em builds com Nova Arquitetura, a SurfaceView Expo não deve ser validada por `UIManager.getViewManagerConfig("N64Core")`. O Expo Modules API registra a view como um adaptador e a aplicação confirma sua presença por `NativeModules.NativeUnimoduleProxy.viewManagersMetadata.N64Core`. Isso evita diagnosticar incorretamente como ausente um módulo que já está incluído no APK.
+
 ## Licença e fonte correspondente
 
 O arquivo `vendor/mupen64plus-ae/gpl-license` contém a GPL-3.0 upstream. A distribuição final precisa conservar os avisos de código aberto e disponibilizar o código-fonte correspondente ao commit fixado, incluindo ajustes locais descritos em `VENDOR.md`.[1]

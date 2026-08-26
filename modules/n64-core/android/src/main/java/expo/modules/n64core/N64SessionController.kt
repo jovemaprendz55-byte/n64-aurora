@@ -27,7 +27,11 @@ object N64SessionController {
   private var dataPath: String = ""
   private var surface: Surface? = null
   private var state: N64SessionState = N64SessionState.IDLE
-  private var message: String = "Pronto para iniciar uma sessão."
+  private var message: String = if (Mupen64Bridge.isLinked) {
+    "Pronto para iniciar uma sessão."
+  } else {
+    Mupen64Bridge.unavailableMessage
+  }
 
   @Synchronized
   fun prepare(context: Context, romUri: String, gameId: String, profileId: String): Map<String, Any> {

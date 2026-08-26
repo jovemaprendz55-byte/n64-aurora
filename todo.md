@@ -24,3 +24,4 @@
 - [x] Corrigir namespaces duplicados, variante release e empacotamento C++ dos módulos Mupen64Plus-AE.
 - [x] Criar script automatizado de prebuild e compilação Gradle para release Android.
 - [x] Criar workflow GitHub Actions para gerar APK release como artefato baixável.
+- [ ] Verificar a conexão GitHub e preparar o envio do workflow de build em nuvem.

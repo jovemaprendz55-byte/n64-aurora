@@ -19,7 +19,7 @@
 - [x] Validar o autolinking Android e documentar a recompilação necessária para a ponte N64Core.
 - [x] Incorporar o código-fonte Mupen64Plus-AE e configurar sua compilação JNI para Android.
 - [x] Mapear os controles virtuais para a ABI do plugin mupen64plus-input-android.
-- [ ] Compilar e validar a sessão completa em um build Android com SDK e NDK 26.1.
+- [ ] Instalar o APK e validar a sessão completa em Android 16 com SDK/NDK 27.2, incluindo uma ROM própria do usuário.
 - [x] Auditar configuração Gradle/NDK, módulo JNI e dependências do Mupen64Plus-AE para identificar bloqueios de compilação.
 - [x] Corrigir namespaces duplicados, variante release e empacotamento C++ dos módulos Mupen64Plus-AE.
 - [x] Criar script automatizado de prebuild e compilação Gradle para release Android.
@@ -29,8 +29,9 @@
 - [x] Configurar uma credencial GitHub com permissão de escrita para enviar o projeto ao repositório público.
 - [x] Verificar acesso de leitura e escrita ao repositório GitHub público antes do push.
 - [x] Validar a credencial de escrita do GitHub para publicar o código e iniciar o build na nuvem.
-- [ ] Publicar a branch `main` no repositório GitHub público confirmado pelo usuário.
-- [ ] Acionar e acompanhar a primeira execução do workflow `Android Release APK` no GitHub Actions.
+- [x] Publicar a branch `main` no repositório GitHub público confirmado pelo usuário.
+- [x] Acionar e acompanhar a primeira execução do workflow `Android Release APK` no GitHub Actions.
 - [x] Corrigir a configuração do workflow após a primeira execução falhar por versões conflitantes do pnpm.
 - [x] Desabilitar a Nova Arquitetura no build Android SDK 54 para evitar a falha de `std::format` com o NDK 26.1 exigido pelo núcleo nativo.
 - [x] Restaurar a Nova Arquitetura exigida pelo Reanimated e migrar o toolchain para NDK 27.2, compatível com `std::format`.
+- [x] Gerar o APK release arm64-v8a pelo GitHub Actions e verificar a integridade do artefato baixado.

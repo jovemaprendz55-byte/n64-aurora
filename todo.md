@@ -20,3 +20,4 @@
 - [x] Incorporar o código-fonte Mupen64Plus-AE e configurar sua compilação JNI para Android.
 - [x] Mapear os controles virtuais para a ABI do plugin mupen64plus-input-android.
 - [ ] Compilar e validar a sessão completa em um build Android com SDK e NDK 26.1.
+- [x] Auditar configuração Gradle/NDK, módulo JNI e dependências do Mupen64Plus-AE para identificar bloqueios de compilação.

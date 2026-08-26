@@ -17,6 +17,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "qr": "node scripts/generate_qr.mjs"
+    ,"audit:native": "node scripts/audit_android_native.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

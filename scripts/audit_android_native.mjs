@@ -25,6 +25,8 @@ const modules = [
 
 const missingRelease = requiredRelease.filter((library) => !existsSync(path.join(releaseDir, library)));
 const missingDebug = requiredRelease.filter((library) => !existsSync(path.join(debugDir, library)));
+const nativeCommon = readFileSync(path.join(vendor, "build_common", "native_common.mk"), "utf8");
+const forceRelease = nativeCommon.includes("BUILD_VARIANT := release") && !nativeCommon.includes("NDK_DEBUG");
 const namespaces = modules.map((module) => {
   const buildGradle = readFileSync(path.join(vendor, module, "build.gradle"), "utf8");
   return { module, namespace: buildGradle.match(/namespace\s*=\s*["']([^"']+)["']/)?.[1] ?? null };
@@ -41,10 +43,12 @@ const duplicates = [...byNamespace.entries()]
 const result = {
   targetAbi: "arm64-v8a",
   releaseDependencies: { missing: missingRelease, complete: missingRelease.length === 0 },
-  debugDependencies: { missing: missingDebug, complete: missingDebug.length === 0 },
+  debugDependencies: { missing: missingDebug, complete: missingDebug.length === 0, releaseForced: forceRelease },
   namespaces,
   duplicateNamespaces: duplicates,
-  status: duplicates.length === 0 && missingRelease.length === 0 ? "review-required" : "build-risk-confirmed",
+  status: duplicates.length === 0 && missingRelease.length === 0 && (forceRelease || missingDebug.length === 0)
+    ? "review-required"
+    : "build-risk-confirmed",
 };
 
 console.log(JSON.stringify(result, null, 2));

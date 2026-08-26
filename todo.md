@@ -21,3 +21,4 @@
 - [x] Mapear os controles virtuais para a ABI do plugin mupen64plus-input-android.
 - [ ] Compilar e validar a sessão completa em um build Android com SDK e NDK 26.1.
 - [x] Auditar configuração Gradle/NDK, módulo JNI e dependências do Mupen64Plus-AE para identificar bloqueios de compilação.
+- [x] Corrigir namespaces duplicados, variante release e empacotamento C++ dos módulos Mupen64Plus-AE.

@@ -1,4 +1,4 @@
-const { withAppBuildGradle, withProjectBuildGradle, withSettingsGradle } = require("@expo/config-plugins");
+const { withAppBuildGradle, withGradleProperties, withProjectBuildGradle, withSettingsGradle } = require("@expo/config-plugins");
 
 const MODULES = [
   "mupen64plus-core",
@@ -10,6 +10,17 @@ const MODULES = [
 ];
 
 const withMupen64plusAe = (config) => {
+  config = withGradleProperties(config, (properties) => {
+    const key = "android.packagingOptions.pickFirsts";
+    const existing = properties.modResults.find((item) => item.type === "property" && item.key === key);
+    if (existing) {
+      if (!existing.value.includes("**/libc++_shared.so")) existing.value += ",**/libc++_shared.so";
+    } else {
+      properties.modResults.push({ type: "property", key, value: "**/libc++_shared.so" });
+    }
+    return properties;
+  });
+
   config = withProjectBuildGradle(config, (project) => {
     if (project.modResults.contents.includes("ndkVersion = \"26.1.10909125\"")) return project;
     project.modResults.contents = project.modResults.contents.replace(

@@ -1,8 +1,7 @@
 BUILD_VARIANT := release
-
-ifeq ($(NDK_DEBUG), 1)
-    BUILD_VARIANT := debug
-endif
+# O N64 Aurora distribui somente arm64-v8a release. As dependências nativas
+# vendorizadas existem apenas nessa variante; usar release também em builds de
+# desenvolvimento evita caminhos debug ausentes durante a configuração do NDK.
 
 
 #hidapi
@@ -65,4 +64,3 @@ COMMON_CFLAGS := $(COMMON_FLAGS)    \
 
 COMMON_CPPFLAGS := $(COMMON_FLAGS)    \
     -fvisibility-inlines-hidden
-

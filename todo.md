@@ -24,4 +24,11 @@
 - [x] Corrigir namespaces duplicados, variante release e empacotamento C++ dos módulos Mupen64Plus-AE.
 - [x] Criar script automatizado de prebuild e compilação Gradle para release Android.
 - [x] Criar workflow GitHub Actions para gerar APK release como artefato baixável.
-- [ ] Verificar a conexão GitHub e preparar o envio do workflow de build em nuvem.
+- [x] Verificar a conexão GitHub e preparar o envio do workflow de build em nuvem.
+- [ ] Obter acesso autorizado ao repositório GitHub privado informado pelo usuário antes do push.
+- [x] Configurar uma credencial GitHub com permissão de escrita para enviar o projeto ao repositório público.
+- [x] Verificar acesso de leitura e escrita ao repositório GitHub público antes do push.
+- [x] Validar a credencial de escrita do GitHub para publicar o código e iniciar o build na nuvem.
+- [ ] Publicar a branch `main` no repositório GitHub público confirmado pelo usuário.
+- [ ] Acionar e acompanhar a primeira execução do workflow `Android Release APK` no GitHub Actions.
+- [x] Corrigir a configuração do workflow após a primeira execução falhar por versões conflitantes do pnpm.

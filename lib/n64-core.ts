@@ -1,5 +1,7 @@
-import { NativeModules, Platform, UIManager } from "react-native";
+import { Platform, UIManager } from "react-native";
 
+import N64CoreModule from "@/modules/n64-core/src/N64CoreModule";
+import type { N64SessionSnapshot } from "@/modules/n64-core/src/N64Core.types";
 import type { N64Input } from "@/lib/n64-models";
 
 type LaunchRequest = {
@@ -8,36 +10,28 @@ type LaunchRequest = {
   profileId: string;
 };
 
-type NativeN64Core = {
-  isAvailable?: () => Promise<boolean>;
-  launchSession?: (request: LaunchRequest) => Promise<void>;
-  sendButton?: (input: N64Input, pressed: boolean) => void;
-  sendAnalog?: (x: number, y: number) => void;
-  pause?: () => Promise<void>;
-  resume?: () => Promise<void>;
-  stop?: () => Promise<void>;
-};
-
-const nativeCore = NativeModules.N64CoreModule as NativeN64Core | undefined;
+const unavailableMessage = "A ponte Android está instalada, mas o núcleo Mupen64Plus-AE ainda não foi empacotado nesta compilação.";
 
 export const N64Core = {
-  hasNativeModule: () => Boolean(nativeCore && Platform.OS !== "web"),
-  hasNativeSurface: () => Platform.OS !== "web" && Boolean(UIManager.getViewManagerConfig("N64GameView")),
+  hasNativeModule: () => Boolean(N64CoreModule && Platform.OS !== "web"),
+  hasNativeSurface: () => Platform.OS !== "web" && Boolean(UIManager.getViewManagerConfig("N64Core")),
   async isAvailable(): Promise<boolean> {
-    if (!nativeCore) return false;
-    return nativeCore.isAvailable ? nativeCore.isAvailable() : true;
+    return N64CoreModule?.isAvailable() ?? false;
   },
-  async launchSession(request: LaunchRequest): Promise<void> {
-    if (!nativeCore?.launchSession) throw new Error("O núcleo nativo ainda não está incluído nesta compilação.");
-    await nativeCore.launchSession(request);
+  async launchSession(request: LaunchRequest): Promise<N64SessionSnapshot> {
+    if (!N64CoreModule) throw new Error("O módulo nativo ainda não está incluído nesta compilação.");
+    if (!N64CoreModule.isAvailable()) throw new Error(unavailableMessage);
+    return N64CoreModule.launchSession(request.romUri, request.gameId, request.profileId);
   },
+  getSnapshot: async (): Promise<N64SessionSnapshot | undefined> => N64CoreModule?.getSnapshotAsync(),
+  addSessionListener: (listener: (snapshot: N64SessionSnapshot) => void) => N64CoreModule?.addListener("onSessionState", listener),
   sendButton(input: N64Input, pressed: boolean): void {
-    nativeCore?.sendButton?.(input, pressed);
+    N64CoreModule?.sendButton(input, pressed);
   },
   sendAnalog(x: number, y: number): void {
-    nativeCore?.sendAnalog?.(x, y);
+    N64CoreModule?.sendAnalog(x, y);
   },
-  pause: async (): Promise<void> => nativeCore?.pause?.(),
-  resume: async (): Promise<void> => nativeCore?.resume?.(),
-  stop: async (): Promise<void> => nativeCore?.stop?.(),
+  pause: async (): Promise<N64SessionSnapshot | undefined> => N64CoreModule?.pause(),
+  resume: async (): Promise<N64SessionSnapshot | undefined> => N64CoreModule?.resume(),
+  stop: async (): Promise<N64SessionSnapshot | undefined> => N64CoreModule?.stop(),
 };

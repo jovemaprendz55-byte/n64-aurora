@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { VirtualControls } from "@/components/n64/virtual-controls";
+import N64CoreView from "@/modules/n64-core/src/N64CoreView";
 import { N64Core } from "@/lib/n64-core";
 import { DEFAULT_CONTROL_LAYOUT, type N64Game } from "@/lib/n64-models";
 import { getGame, loadProfiles, loadSettings, markGamePlayed } from "@/lib/n64-storage";
@@ -15,6 +16,8 @@ export default function PlayGameScreen() {
   const [game, setGame] = useState<N64Game>();
   const [isLaunching, setIsLaunching] = useState(true);
   const [nativeAvailable, setNativeAvailable] = useState(false);
+  const [bridgeInstalled, setBridgeInstalled] = useState(false);
+  const [sessionId, setSessionId] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -24,13 +27,18 @@ export default function PlayGameScreen() {
       const profiles = await loadProfiles();
       const profile = profiles.find((candidate) => candidate.id === settings.activeProfileId) ?? profiles[0];
       const available = await N64Core.isAvailable();
+      const bridge = N64Core.hasNativeModule() && N64Core.hasNativeSurface();
+      let nextSessionId = "";
       if (selectedGame && available) {
-        await N64Core.launchSession({ romUri: selectedGame.uri, gameId: selectedGame.id, profileId: profile.id });
+        const session = await N64Core.launchSession({ romUri: selectedGame.uri, gameId: selectedGame.id, profileId: profile.id });
+        nextSessionId = session.sessionId;
         await markGamePlayed(selectedGame.id);
       }
       if (isMounted) {
         setGame(selectedGame);
-        setNativeAvailable(available && N64Core.hasNativeSurface());
+        setNativeAvailable(available && bridge);
+        setBridgeInstalled(bridge);
+        setSessionId(nextSessionId);
         setIsLaunching(false);
       }
     }
@@ -54,11 +62,12 @@ export default function PlayGameScreen() {
 
         <View style={styles.viewport}>
           <View style={styles.viewportGrid} />
-          <View style={styles.videoPlaceholder}>
-            <MaterialIcons name={nativeAvailable ? "videogame-asset" : "memory"} size={33} color="#22D3EE" />
-            <Text style={styles.videoTitle}>{nativeAvailable ? "A sessão foi iniciada" : "Núcleo nativo não incluído"}</Text>
-            <Text style={styles.videoText}>{nativeAvailable ? "A superfície de vídeo Android será exibida nesta área." : "Compile o projeto Android com a camada JNI do Mupen64Plus-AE para executar a ROM selecionada."}</Text>
-          </View>
+          {bridgeInstalled ? <N64CoreView sessionId={sessionId} style={StyleSheet.absoluteFill} /> : null}
+          {!nativeAvailable ? <View style={styles.videoPlaceholder}>
+            <MaterialIcons name={bridgeInstalled ? "developer-board" : "memory"} size={33} color="#22D3EE" />
+            <Text style={styles.videoTitle}>{bridgeInstalled ? "Ponte Android pronta" : "Módulo nativo não incluído"}</Text>
+            <Text style={styles.videoText}>{bridgeInstalled ? "A SurfaceView foi instalada. Adicione ae-bridge e os plugins Mupen64Plus-AE para renderizar esta ROM." : "Recompile o aplicativo com o módulo N64Core para preparar a superfície e a sessão de emulação."}</Text>
+          </View> : null}
         </View>
 
         <View style={styles.controlArea}>

@@ -39,5 +39,6 @@
 - [x] Recompilar um APK que reconheça a sessão N64Core, com autolinking, SurfaceView Expo e N64CoreModule verificados no artefato.
 - [ ] Instalar o APK corrigido no aparelho e abrir uma ROM própria para validar carregamento do núcleo, vídeo, áudio e controles.
 - [x] Corrigir a tela preta após a sessão N64Core carregar, reforçando EGL/OpenGL ES, configuração do buffer da SurfaceView e diagnóstico de `eglSwapBuffers`.
-- [ ] Recompilar o APK com o reforço EGL e validar no Android 16 se a imagem do jogo aparece.
+- [x] Recompilar o APK com o reforço EGL; o workflow 33220105707 concluiu e o APK foi verificado como íntegro.
+- [ ] Instalar o APK EGL corrigido no Android 16 e confirmar se a imagem do jogo aparece.
 - [x] Tornar opcional o callback Java `RetroAchievementsManager` no ae-bridge, pois esta integração não oferece RetroAchievements e sua ausência não pode bloquear o carregamento do núcleo Mupen64Plus-AE.

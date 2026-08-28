@@ -675,6 +675,14 @@ extern DECLSPEC m64p_error VidExtFuncInit()
     memcpy(windowAttribList, defaultWindowAttribs, sizeof(defaultWindowAttribs));
     memcpy(contextAttribs, defaultContextAttribs, sizeof(defaultContextAttribs));
 
+    // O renderizador GLideN64 usado neste port é OpenGL ES no Android. Sem
+    // selecionar a API antes da criação do contexto, alguns drivers aceitam
+    // a configuração mas não apresentam frames na SurfaceView.
+    if (eglBindAPI(EGL_OPENGL_ES_API) != EGL_TRUE) {
+        LOGE("eglBindAPI(EGL_OPENGL_ES_API) failed: %d", eglGetError());
+        return M64ERR_INVALID_STATE;
+    }
+
     if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
         LOGE("eglGetDisplay() returned error %d", eglGetError());
         return M64ERR_INVALID_STATE;
@@ -739,6 +747,7 @@ extern DECLSPEC m64p_error VidExtFuncSetMode(int Width, int Height, int BitsPerP
 		{
 			LOGI("VidExtFuncSetMode: Initializing surface");
 
+            ANativeWindow_setBuffersGeometry(native_window, 0, 0, WINDOW_FORMAT_RGBA_8888);
 			if (!(surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)native_window, windowAttribList)))
 			{
 				LOGE("eglCreateWindowSurface() returned error %d", eglGetError());
@@ -960,9 +969,10 @@ extern DECLSPEC m64p_error VidExtFuncGLSwapBuf()
 
 			new_surface = false;
 
-			LOGI("VidExtFuncGLSwapBuf: New surface has been detected");
+				LOGI("VidExtFuncGLSwapBuf: New surface has been detected");
 
-			if (!(surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)native_window, windowAttribList))) {
+                ANativeWindow_setBuffersGeometry(native_window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+				if (!(surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)native_window, windowAttribList))) {
 				LOGE("eglCreateWindowSurface() returned error %d", eglGetError());
 				return M64ERR_INVALID_STATE;
 			}
@@ -988,9 +998,9 @@ extern DECLSPEC m64p_error VidExtFuncGLSwapBuf()
 				oldVsync = vsync;
 			}
 
-			if (!isPaused) {
-				eglSwapBuffers(display, surface);
-			}
+				if (!isPaused && !eglSwapBuffers(display, surface)) {
+                    LOGE("eglSwapBuffers() returned error %d", eglGetError());
+				}
 		}
 	}
 
@@ -1023,8 +1033,14 @@ extern "C" DECLSPEC void setNativeWindow(JNIEnv* env, jobject native_surface)
 
 	LOGI("setNativeWindow: New surface has been set");
 
-	native_window = ANativeWindow_fromSurface(env, native_surface);
-	new_surface = true;
+    if (native_window != nullptr) {
+        ANativeWindow_release(native_window);
+        native_window = nullptr;
+    }
+    if (native_surface != nullptr) {
+        native_window = ANativeWindow_fromSurface(env, native_surface);
+    }
+		new_surface = native_window != nullptr;
 }
 
 extern "C" DECLSPEC void unsetNativeWindow(void)

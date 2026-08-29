@@ -150,7 +150,10 @@ EXPORT int CALL InitiateGFX (GFX_INFO Gfx_Info)
     else
         frameSkipper.setSkips( FrameSkipper::MANUAL, config.maxFrameSkip );
 
-    OGL_Start();
+    if (!OGL_Start()) {
+        LOG(LOG_ERROR, "OGL_Start failed; graphics plugin cannot provide a video surface.\n");
+        return 0;
+    }
 
     return 1;
 }

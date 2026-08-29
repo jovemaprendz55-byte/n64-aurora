@@ -194,21 +194,28 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
     close_plugins();
     return env->NewStringUTF(g_last_error.c_str());
   }
-  if (g_attach_plugin(kPluginRsp, g_rsp) != 0 || g_attach_plugin(kPluginGfx, g_gfx) != 0 ||
-      g_attach_plugin(kPluginAudio, g_audio) != 0 || g_attach_plugin(kPluginInput, g_input) != 0) {
-    set_error("O core Mupen64Plus-AE recusou a inicialização de um plugin.");
-    g_shutdown();
-    close_plugins();
-    return env->NewStringUTF(g_last_error.c_str());
-  }
-  g_set_input_config(env, nullptr, 0, JNI_TRUE, kPakMemory);
+
+  // O override precisa ser instalado antes de plugin_start_gfx(); caso contrário
+  // o plugin inicia com as funções de vídeo padrão e a SurfaceView permanece preta.
   g_override_video();
+
   if (g_do_command(kCommandRomOpen, static_cast<int>(rom.size()), rom.data()) != 0) {
     set_error("O core não conseguiu abrir a ROM selecionada.");
     g_shutdown();
     close_plugins();
     return env->NewStringUTF(g_last_error.c_str());
   }
+
+  // O frontend Mupen64Plus só aceita CoreAttachPlugin depois de ROM_OPEN;
+  // plugin_start_gfx também precisa dos dados da ROM para criar a saída de vídeo.
+  if (g_attach_plugin(kPluginGfx, g_gfx) != 0 || g_attach_plugin(kPluginAudio, g_audio) != 0 ||
+      g_attach_plugin(kPluginInput, g_input) != 0 || g_attach_plugin(kPluginRsp, g_rsp) != 0) {
+    set_error("O core Mupen64Plus-AE recusou a inicialização de um plugin após abrir a ROM.");
+    g_shutdown();
+    close_plugins();
+    return env->NewStringUTF(g_last_error.c_str());
+  }
+  g_set_input_config(env, nullptr, 0, JNI_TRUE, kPakMemory);
 
   g_running = true;
   g_emulation_thread = std::thread([rom = std::move(rom)]() mutable {

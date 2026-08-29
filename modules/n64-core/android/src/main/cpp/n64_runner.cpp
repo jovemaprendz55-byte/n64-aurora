@@ -30,7 +30,7 @@ using CoreAttachPlugin = int (*)(int, void*);
 using CoreDoCommand = int (*)(int, int, void*);
 using SetNativeWindow = void (*)(JNIEnv*, jobject);
 using UnsetNativeWindow = void (*)();
-using OverrideVideo = void (*)();
+using OverrideVideo = int (*)();
 using SetInputConfig = void (*)(JNIEnv*, jclass, jint, jboolean, jint);
 using SetInputState = void (*)(JNIEnv*, jclass, jint, jbooleanArray, jdouble, jdouble, jboolean);
 
@@ -209,7 +209,14 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
 
   // O override precisa ser instalado antes de plugin_start_gfx(); caso contrário
   // o plugin inicia com as funções de vídeo padrão e a SurfaceView permanece preta.
-  g_override_video();
+  if (g_override_video() != 0) {
+    set_error("O core não aceitou a tabela de funções de vídeo do ae-bridge.");
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_starting = false;
+    g_shutdown();
+    close_plugins();
+    return env->NewStringUTF(g_last_error.c_str());
+  }
 
   if (g_do_command(kCommandRomOpen, static_cast<int>(rom.size()), rom.data()) != 0) {
     set_error("O core não conseguiu abrir a ROM selecionada.");

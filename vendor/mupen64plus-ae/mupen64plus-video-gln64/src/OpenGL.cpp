@@ -224,7 +224,11 @@ bool OGL_VidExt_Start()
 {
     /* Initialize VidExt */
     LOG(LOG_MINIMAL, "Initializing video subsystem...\n" );
-    CoreVideo_Init();
+    const m64p_error init_result = CoreVideo_Init();
+    if (init_result != M64ERR_SUCCESS) {
+        LOG(LOG_ERROR, "Video subsystem initialization failed with code %d\n", init_result);
+        return FALSE;
+    }
 
     int current_w = config.window.width;
     int current_h = config.window.height;
@@ -235,9 +239,10 @@ bool OGL_VidExt_Start()
     // TODO: I should actually check what the pixelformat is, rather than assuming 16 bpp (RGB_565) or 32 bpp (RGBA_8888):
     int bitsPP = 16;
 
-    if (CoreVideo_SetVideoMode(current_w, current_h, bitsPP, M64VIDEO_FULLSCREEN, (m64p_video_flags)0) == M64ERR_INVALID_STATE)
+    const m64p_error mode_result = CoreVideo_SetVideoMode(current_w, current_h, bitsPP, M64VIDEO_FULLSCREEN, (m64p_video_flags)0);
+    if (mode_result != M64ERR_SUCCESS)
     {
-        LOG(LOG_ERROR, "Problem setting videomode %dx%d\n", current_w, current_h);
+        LOG(LOG_ERROR, "Problem setting videomode %dx%d, error %d\n", current_w, current_h, mode_result);
         CoreVideo_Quit();
         return FALSE;
     }

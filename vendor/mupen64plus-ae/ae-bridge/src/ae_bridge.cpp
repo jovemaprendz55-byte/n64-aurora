@@ -1141,12 +1141,22 @@ extern DECLSPEC void resumeEmulator()
     isPaused = false;
 }
 
-extern "C" DECLSPEC void overrideAeVidExtFuncs(void)
+extern "C" DECLSPEC m64p_error overrideAeVidExtFuncs(void)
 {
-	CoreHandle = dlopen("libmupen64plus-core.so", RTLD_NOW);
-	CoreOverrideVidExt    = (ptr_CoreOverrideVidExt)   dlsym(CoreHandle, "CoreOverrideVidExt");
-	DebugMemGetPointer    = (ptr_DebugMemGetPointer)    dlsym(CoreHandle, "DebugMemGetPointer");
-	CoreOverrideVidExt(&vidExtFunctions);
+	CoreHandle = dlopen("libmupen64plus-core.so", RTLD_NOW | RTLD_GLOBAL);
+	if (CoreHandle == nullptr) {
+		LOGE("overrideAeVidExtFuncs: could not open core: %s", dlerror());
+		return M64ERR_NOT_INIT;
+	}
+	CoreOverrideVidExt = (ptr_CoreOverrideVidExt)dlsym(CoreHandle, "CoreOverrideVidExt");
+	DebugMemGetPointer = (ptr_DebugMemGetPointer)dlsym(CoreHandle, "DebugMemGetPointer");
+	if (CoreOverrideVidExt == nullptr) {
+		LOGE("overrideAeVidExtFuncs: CoreOverrideVidExt symbol is missing");
+		return M64ERR_INPUT_INVALID;
+	}
+	const m64p_error result = CoreOverrideVidExt(&vidExtFunctions);
+	LOGI("overrideAeVidExtFuncs: CoreOverrideVidExt returned %d", result);
+	return result;
 }
 
 void checkLibraryError(const char* message)

@@ -9,7 +9,7 @@ const source = readFileSync(
 describe("N64 runner startup order", () => {
   it("installs the video override before ROM and plugin startup", () => {
     const startup = source.indexOf("startup(kCoreApiVersion");
-    const override = source.indexOf("g_override_video();", startup);
+    const override = source.indexOf("g_override_video() != 0", startup);
     const romOpen = source.indexOf("kCommandRomOpen", override);
     const attachGfx = source.indexOf("g_attach_plugin(kPluginGfx", romOpen);
     const attachRsp = source.indexOf("g_attach_plugin(kPluginRsp", attachGfx);

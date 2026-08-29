@@ -47,4 +47,6 @@
 - [x] Corrigir a ordem do core: instalar o override de vídeo antes de ROM_OPEN e conectar GFX, áudio, entrada e RSP após a ROM ser aberta.
 - [x] Recompilar o APK com a ordem corrigida; o workflow 33234032635 concluiu e o APK foi verificado como íntegro.
 - [ ] Instalar o APK com a correção do deadlock e confirmar a imagem do jogo no Android 16.
+- [x] Instrumentar `VidExtFuncInit` e `VidExtFuncSetMode` com estados e erros EGL, além de propagar o retorno de `CoreOverrideVidExt` ao JNI; a tipagem e os 8 testes Vitest passaram.
+- [ ] Recompilar o APK instrumentado e obter o log real do plugin gráfico no Android 16 antes de declarar a renderização corrigida.
 - [x] Tornar opcional o callback Java `RetroAchievementsManager` no ae-bridge, pois esta integração não oferece RetroAchievements e sua ausência não pode bloquear o carregamento do núcleo Mupen64Plus-AE.

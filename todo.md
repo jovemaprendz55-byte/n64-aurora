@@ -45,5 +45,6 @@
 - [x] Remover o bloqueio do mutex durante a inicialização síncrona do core para permitir que `nativeAttachSurface` entregue a SurfaceView ao EGL.
 - [x] Investigar a tela preta persistente com sessão ativa, verificando execução do core, configuração do plugin gráfico e apresentação de frames.
 - [x] Corrigir a ordem do core: instalar o override de vídeo antes de ROM_OPEN e conectar GFX, áudio, entrada e RSP após a ROM ser aberta.
-- [ ] Recompilar o APK com a ordem corrigida e validar a imagem no Android 16.
+- [x] Recompilar o APK com a ordem corrigida; o workflow 33234032635 concluiu e o APK foi verificado como íntegro.
+- [ ] Instalar o APK com a correção do deadlock e confirmar a imagem do jogo no Android 16.
 - [x] Tornar opcional o callback Java `RetroAchievementsManager` no ae-bridge, pois esta integração não oferece RetroAchievements e sua ausência não pode bloquear o carregamento do núcleo Mupen64Plus-AE.

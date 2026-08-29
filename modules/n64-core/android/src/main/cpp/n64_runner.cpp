@@ -51,6 +51,7 @@ OverrideVideo g_override_video = nullptr;
 SetInputConfig g_set_input_config = nullptr;
 SetInputState g_set_input_state = nullptr;
 bool g_running = false;
+bool g_starting = false;
 std::string g_last_error;
 std::array<jboolean, 16> g_button_state{};
 double g_analog_x = 0.0;
@@ -180,17 +181,28 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeAttachSurface(JNIEnv* env, jobject
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstring rom_path, jstring config_path, jstring data_path) {
-  std::lock_guard<std::mutex> lock(g_mutex);
-  if (g_running) return nullptr;
-  if (!load_engine()) return env->NewStringUTF(g_last_error.c_str());
+  {
+    std::lock_guard<std::mutex> lock(g_mutex);
+    if (g_running || g_starting) return nullptr;
+    if (!load_engine()) return env->NewStringUTF(g_last_error.c_str());
+    // Libere o mutex antes de CoreDoCommand: VidExtFuncSetMode pode esperar
+    // a SurfaceView, enquanto nativeAttachSurface precisa deste mesmo mutex.
+    g_starting = true;
+  }
 
   std::vector<unsigned char> rom;
-  if (!read_rom(as_string(env, rom_path), rom)) return env->NewStringUTF(g_last_error.c_str());
+  if (!read_rom(as_string(env, rom_path), rom)) {
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_starting = false;
+    return env->NewStringUTF(g_last_error.c_str());
+  }
   const std::string config = as_string(env, config_path);
   const std::string data = as_string(env, data_path);
   const auto startup = reinterpret_cast<CoreStartup>(dlsym(g_core, "CoreStartup"));
   if (startup == nullptr || startup(kCoreApiVersion, config.c_str(), data.c_str(), nullptr, nullptr, nullptr, nullptr) != 0) {
     set_error("O core não conseguiu criar sua configuração local.");
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_starting = false;
     close_plugins();
     return env->NewStringUTF(g_last_error.c_str());
   }
@@ -202,6 +214,8 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
   if (g_do_command(kCommandRomOpen, static_cast<int>(rom.size()), rom.data()) != 0) {
     set_error("O core não conseguiu abrir a ROM selecionada.");
     g_shutdown();
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_starting = false;
     close_plugins();
     return env->NewStringUTF(g_last_error.c_str());
   }
@@ -212,12 +226,18 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
       g_attach_plugin(kPluginInput, g_input) != 0 || g_attach_plugin(kPluginRsp, g_rsp) != 0) {
     set_error("O core Mupen64Plus-AE recusou a inicialização de um plugin após abrir a ROM.");
     g_shutdown();
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_starting = false;
     close_plugins();
     return env->NewStringUTF(g_last_error.c_str());
   }
   g_set_input_config(env, nullptr, 0, JNI_TRUE, kPakMemory);
 
-  g_running = true;
+  {
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_running = true;
+    g_starting = false;
+  }
   g_emulation_thread = std::thread([rom = std::move(rom)]() mutable {
     const int execute_result = g_do_command(kCommandExecute, 0, nullptr);
     if (execute_result != 0) set_error("A execução do core foi interrompida com erro.");

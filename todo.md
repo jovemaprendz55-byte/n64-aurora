@@ -41,6 +41,8 @@
 - [x] Corrigir a tela preta após a sessão N64Core carregar, reforçando EGL/OpenGL ES, configuração do buffer da SurfaceView e diagnóstico de `eglSwapBuffers`.
 - [x] Recompilar o APK com o reforço EGL; o workflow 33220105707 concluiu e o APK foi verificado como íntegro.
 - [ ] Instalar o APK EGL corrigido no Android 16 e confirmar se a imagem do jogo aparece.
+- [x] Diagnosticar a tela preta persistente no plugin gráfico, incluindo janela ANativeWindow, contexto EGL/OpenGL ES e callbacks de apresentação; a causa identificada foi o bloqueio do mutex enquanto o EGL aguardava a SurfaceView.
+- [x] Remover o bloqueio do mutex durante a inicialização síncrona do core para permitir que `nativeAttachSurface` entregue a SurfaceView ao EGL.
 - [x] Investigar a tela preta persistente com sessão ativa, verificando execução do core, configuração do plugin gráfico e apresentação de frames.
 - [x] Corrigir a ordem do core: instalar o override de vídeo antes de ROM_OPEN e conectar GFX, áudio, entrada e RSP após a ROM ser aberta.
 - [ ] Recompilar o APK com a ordem corrigida e validar a imagem no Android 16.

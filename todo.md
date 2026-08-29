@@ -48,5 +48,6 @@
 - [x] Recompilar o APK com a ordem corrigida; o workflow 33234032635 concluiu e o APK foi verificado como íntegro.
 - [ ] Instalar o APK com a correção do deadlock e confirmar a imagem do jogo no Android 16.
 - [x] Instrumentar `VidExtFuncInit` e `VidExtFuncSetMode` com estados e erros EGL, além de propagar o retorno de `CoreOverrideVidExt` ao JNI; a tipagem e os 8 testes Vitest passaram.
-- [ ] Recompilar o APK instrumentado e obter o log real do plugin gráfico no Android 16 antes de declarar a renderização corrigida.
+- [x] Recompilar o APK instrumentado; o workflow 33234849330 concluiu e o APK foi verificado como íntegro.
+- [ ] Instalar o APK instrumentado no Android 16 e coletar o log real de `CoreOverrideVidExt`, `VidExt_Init`, `VidExt_SetVideoMode` e `eglSwapBuffers`.
 - [x] Tornar opcional o callback Java `RetroAchievementsManager` no ae-bridge, pois esta integração não oferece RetroAchievements e sua ausência não pode bloquear o carregamento do núcleo Mupen64Plus-AE.

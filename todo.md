@@ -52,5 +52,6 @@
 - [ ] Instalar o APK instrumentado no Android 16 e coletar o log real de `CoreOverrideVidExt`, `VidExt_Init`, `VidExt_SetVideoMode` e `eglSwapBuffers`.
 - [x] Propagar a falha de `OGL_Start` em `InitiateGFX` para que o app mostre erro de vídeo em vez de declarar uma sessão ativa com tela preta; regressão estática adicionada.
 - [x] Corrigir o erro de compilação do diagnóstico incluindo `Common.h` em `gles2N64.cpp`; `pnpm check` e os 11 testes Vitest passaram.
-- [ ] Recompilar o APK com a propagação de falha do plugin e testar a mensagem no Android 16.
+- [x] Recompilar o APK com a propagação de falha do plugin; o workflow 33295215333 concluiu com sucesso.
+- [ ] Instalar o APK 33295215333 no Android 16 e testar a mensagem de erro ou a imagem do jogo.
 - [x] Tornar opcional o callback Java `RetroAchievementsManager` no ae-bridge, pois esta integração não oferece RetroAchievements e sua ausência não pode bloquear o carregamento do núcleo Mupen64Plus-AE.

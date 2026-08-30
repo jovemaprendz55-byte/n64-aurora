@@ -4,6 +4,7 @@
 
 #include "m64p_types.h"
 #include "m64p_plugin.h"
+#include "Common.h"
 
 #include "gles2N64.h"
 #include "Debug.h"

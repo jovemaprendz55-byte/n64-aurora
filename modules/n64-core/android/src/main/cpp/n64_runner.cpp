@@ -24,7 +24,9 @@ constexpr int kPluginAudio = 3;
 constexpr int kPluginInput = 4;
 constexpr int kPakMemory = 2;
 
-using CoreStartup = int (*)(int, const char*, const char*, void*, void*, void*, void*);
+using CoreDebugCallback = void (*)(void*, int, const char*);
+using CoreStateCallback = void (*)(void*, int, int);
+using CoreStartup = int (*)(int, const char*, const char*, void*, CoreDebugCallback, void*, CoreStateCallback);
 using CoreShutdown = int (*)();
 using CoreAttachPlugin = int (*)(int, void*);
 using CoreDoCommand = int (*)(int, int, void*);
@@ -33,6 +35,7 @@ using UnsetNativeWindow = void (*)();
 using OverrideVideo = int (*)();
 using SetInputConfig = void (*)(JNIEnv*, jclass, jint, jboolean, jint);
 using SetInputState = void (*)(JNIEnv*, jclass, jint, jbooleanArray, jdouble, jdouble, jboolean);
+using GetVideoDiagnostics = const char* (*)();
 
 std::mutex g_mutex;
 std::thread g_emulation_thread;
@@ -50,12 +53,19 @@ UnsetNativeWindow g_unset_window = nullptr;
 OverrideVideo g_override_video = nullptr;
 SetInputConfig g_set_input_config = nullptr;
 SetInputState g_set_input_state = nullptr;
+GetVideoDiagnostics g_get_video_diagnostics = nullptr;
 bool g_running = false;
 bool g_starting = false;
 std::string g_last_error;
 std::array<jboolean, 16> g_button_state{};
 double g_analog_x = 0.0;
 double g_analog_y = 0.0;
+
+void core_debug_callback(void*, int level, const char* message) {
+  const int android_level = level <= 1 ? ANDROID_LOG_ERROR : ANDROID_LOG_DEBUG;
+  __android_log_print(android_level, "Mupen64PlusCore", "level=%d %s", level,
+                      message == nullptr ? "(mensagem nula)" : message);
+}
 
 void set_error(const std::string& error) {
   g_last_error = error;
@@ -105,6 +115,7 @@ bool load_engine() {
   g_override_video = reinterpret_cast<OverrideVideo>(dlsym(g_bridge, "overrideAeVidExtFuncs"));
   g_set_input_config = reinterpret_cast<SetInputConfig>(dlsym(g_input, "Java_paulscode_android_mupen64plusae_jni_NativeInput_setConfig"));
   g_set_input_state = reinterpret_cast<SetInputState>(dlsym(g_input, "Java_paulscode_android_mupen64plusae_jni_NativeInput_setState"));
+  g_get_video_diagnostics = reinterpret_cast<GetVideoDiagnostics>(dlsym(g_bridge, "getVideoDiagnostics"));
 
   if (g_shutdown == nullptr || g_attach_plugin == nullptr || g_do_command == nullptr || g_set_window == nullptr ||
       g_unset_window == nullptr || g_override_video == nullptr || g_set_input_config == nullptr || g_set_input_state == nullptr) {
@@ -199,7 +210,8 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
   const std::string config = as_string(env, config_path);
   const std::string data = as_string(env, data_path);
   const auto startup = reinterpret_cast<CoreStartup>(dlsym(g_core, "CoreStartup"));
-  if (startup == nullptr || startup(kCoreApiVersion, config.c_str(), data.c_str(), nullptr, nullptr, nullptr, nullptr) != 0) {
+  if (startup == nullptr || startup(kCoreApiVersion, config.c_str(), data.c_str(), nullptr,
+                                     core_debug_callback, nullptr, nullptr) != 0) {
     set_error("O core não conseguiu criar sua configuração local.");
     std::lock_guard<std::mutex> lock(g_mutex);
     g_starting = false;
@@ -255,6 +267,14 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
   return nullptr;
 }
 
+extern "C" JNIEXPORT jstring JNICALL
+Java_expo_modules_n64core_Mupen64Bridge_nativeGetVideoDiagnostics(JNIEnv* env, jobject) {
+  std::lock_guard<std::mutex> lock(g_mutex);
+  if (g_get_video_diagnostics == nullptr) return env->NewStringUTF("bridge=unavailable");
+  const char* diagnostics = g_get_video_diagnostics();
+  return env->NewStringUTF(diagnostics == nullptr ? "bridge=empty" : diagnostics);
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_expo_modules_n64core_Mupen64Bridge_nativePause(JNIEnv*, jobject) {
   std::lock_guard<std::mutex> lock(g_mutex);
@@ -303,6 +323,7 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStop(JNIEnv*, jobject) {
   g_override_video = nullptr;
   g_set_input_config = nullptr;
   g_set_input_state = nullptr;
+  g_get_video_diagnostics = nullptr;
   g_button_state.fill(JNI_FALSE);
   g_analog_x = 0.0;
   g_analog_y = 0.0;

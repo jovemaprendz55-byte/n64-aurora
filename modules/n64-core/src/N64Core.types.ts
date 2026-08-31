@@ -10,6 +10,7 @@ export type N64SessionSnapshot = {
   hasSurface: boolean;
   gameId: string;
   profileId: string;
+  videoDiagnostics?: string;
 };
 
 export type N64CoreModuleEvents = {

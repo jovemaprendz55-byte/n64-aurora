@@ -56,22 +56,9 @@ extern uint32_t VidExtFuncGLGetDefaultFramebuffer(void);
 extern void vsyncEnabled(int enabled);
 extern void pauseEmulator();
 extern void resumeEmulator();
+extern const char* getVideoDiagnostics(void);
 
-m64p_video_extension_functions vidExtFunctions = {14,
-                                                  VidExtFuncInit,
-                                                  VidExtFuncQuit,
-                                                  VidExtFuncListModes,
-                                                  VidExtFuncListRates,
-                                                  VidExtFuncSetMode,
-                                                  VidExtFuncSetModeWithRate,
-                                                  VidExtFuncGLGetProc,
-                                                  VidExtFuncGLSetAttr,
-                                                  VidExtFuncGLGetAttr,
-                                                  VidExtFuncGLSwapBuf,
-                                                  VidExtFuncSetCaption,
-                                                  VidExtFuncToggleFS,
-                                                  VidExtFuncResizeWindow,
-                                                  VidExtFuncGLGetDefaultFramebuffer};
+extern m64p_video_extension_functions vidExtFunctions;
 #ifdef __cplusplus
 }
 #endif

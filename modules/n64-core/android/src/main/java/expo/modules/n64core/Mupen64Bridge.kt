@@ -20,6 +20,7 @@ object Mupen64Bridge {
     } ?: "O núcleo está disponível."
 
   fun attachSurface(surface: Surface?): Boolean = isLinked && nativeAttachSurface(surface)
+  fun videoDiagnostics(): String = if (isLinked) nativeGetVideoDiagnostics() else "bridge=unavailable"
   fun start(romPath: String, configPath: String, dataPath: String): String? =
     if (isLinked) nativeStart(romPath, configPath, dataPath) else unavailableMessage
   fun pause() { if (isLinked) nativePause() }
@@ -29,6 +30,7 @@ object Mupen64Bridge {
   fun stop() { if (isLinked) nativeStop() }
 
   private external fun nativeAttachSurface(surface: Surface?): Boolean
+  private external fun nativeGetVideoDiagnostics(): String
   private external fun nativeStart(romPath: String, configPath: String, dataPath: String): String?
   private external fun nativePause()
   private external fun nativeResume()

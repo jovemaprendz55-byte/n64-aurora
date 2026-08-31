@@ -11,6 +11,8 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <atomic>
+#include <stdio.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <m64p_frontend.h>
@@ -40,6 +42,16 @@ int vsync = 0;
 int oldVsync = 1;
 bool isPaused = false;
 static bool detachOnQuitCore = false;
+static uint64_t videoModeCount = 0;
+static uint64_t swapAttemptCount = 0;
+static uint64_t swapFailureCount = 0;
+static uint64_t missingWindowCount = 0;
+static EGLint lastSwapError = EGL_SUCCESS;
+static int lastWindowWidth = 0;
+static int lastWindowHeight = 0;
+static int lastWindowFormat = 0;
+static bool videoInitialized = false;
+static bool videoModeReady = false;
 
 m64p_dynlib_handle CoreHandle = NULL;
 ptr_CoreOverrideVidExt  CoreOverrideVidExt = NULL;
@@ -604,6 +616,22 @@ EGLint attribList[sizeof(defaultAttributeList) / sizeof(EGLint)];
 EGLint windowAttribList[sizeof(defaultWindowAttribs) / sizeof(EGLint)];
 EGLint contextAttribs[sizeof(defaultContextAttribs) / sizeof(EGLint)];
 
+m64p_video_extension_functions vidExtFunctions = {14,
+                                                  VidExtFuncInit,
+                                                  VidExtFuncQuit,
+                                                  VidExtFuncListModes,
+                                                  VidExtFuncListRates,
+                                                  VidExtFuncSetMode,
+                                                  VidExtFuncSetModeWithRate,
+                                                  VidExtFuncGLGetProc,
+                                                  VidExtFuncGLSetAttr,
+                                                  VidExtFuncGLGetAttr,
+                                                  VidExtFuncGLSwapBuf,
+                                                  VidExtFuncSetCaption,
+                                                  VidExtFuncToggleFS,
+                                                  VidExtFuncResizeWindow,
+                                                  VidExtFuncGLGetDefaultFramebuffer};
+
 size_t FindIndex( const EGLint a[], size_t size, int value )
 {
     size_t index = 0;
@@ -668,9 +696,20 @@ extern DECLSPEC m64p_error VidExtFuncInit()
 	std::unique_lock<std::mutex> guard(nativeWindowAccess);
 
     frameCount = 0;
-    surface = EGL_NO_SURFACE;
-    context = EGL_NO_CONTEXT;
-    display = EGL_NO_DISPLAY;
+	videoModeCount = 0;
+	swapAttemptCount = 0;
+	swapFailureCount = 0;
+	missingWindowCount = 0;
+	lastSwapError = EGL_SUCCESS;
+	lastWindowWidth = 0;
+	lastWindowHeight = 0;
+	lastWindowFormat = 0;
+	videoInitialized = false;
+	videoModeReady = false;
+	surface = EGL_NO_SURFACE;
+	context = EGL_NO_CONTEXT;
+	display = EGL_NO_DISPLAY;
+
     memcpy(attribList, defaultAttributeList, sizeof(defaultAttributeList));
     memcpy(windowAttribList, defaultWindowAttribs, sizeof(defaultWindowAttribs));
     memcpy(contextAttribs, defaultContextAttribs, sizeof(defaultContextAttribs));
@@ -692,6 +731,8 @@ extern DECLSPEC m64p_error VidExtFuncInit()
         return M64ERR_INVALID_STATE;
     }
 
+    videoInitialized = true;
+    LOGI("VidExtFuncInit: EGL initialized display=%p", display);
     return M64ERR_SUCCESS;
 }
 
@@ -708,6 +749,7 @@ extern DECLSPEC m64p_error VidExtFuncListRates(m64p_2d_size, int *, int *)
 
 extern DECLSPEC m64p_error VidExtFuncSetMode(int Width, int Height, int BitsPerPixel, int ScreenMode, int Flags)
 {
+    videoModeCount++;
 	{
 		std::unique_lock<std::mutex> guard(nativeWindowAccess);
 
@@ -743,11 +785,16 @@ extern DECLSPEC m64p_error VidExtFuncSetMode(int Width, int Height, int BitsPerP
 
 	{
 		std::unique_lock<std::mutex> guard(nativeWindowAccess);
-		if(new_surface && native_window != nullptr)
-		{
-			LOGI("VidExtFuncSetMode: Initializing surface");
+					if(new_surface && native_window != nullptr)
+			{
+				LOGI("VidExtFuncSetMode: Initializing surface");
 
-            ANativeWindow_setBuffersGeometry(native_window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+                if (surface != EGL_NO_SURFACE) {
+                    eglDestroySurface(display, surface);
+                    surface = EGL_NO_SURFACE;
+                }
+                ANativeWindow_setBuffersGeometry(native_window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+
 			if (!(surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)native_window, windowAttribList)))
 			{
 				LOGE("eglCreateWindowSurface() returned error %d", eglGetError());
@@ -760,8 +807,10 @@ extern DECLSPEC m64p_error VidExtFuncSetMode(int Width, int Height, int BitsPerP
 				return M64ERR_INVALID_STATE;
 			}
 
-			new_surface = false;
-		} else {
+							new_surface = false;
+                videoModeReady = true;
+			} else {
+
 			LOGE("VidExtFuncSetMode called before surface has been set");
 			return M64ERR_INVALID_STATE;
 		}
@@ -965,13 +1014,17 @@ extern DECLSPEC m64p_error VidExtFuncGLSwapBuf()
 
 	if(native_window != nullptr)
 	{
-		if (new_surface) {
-
+				if (new_surface) {
 			new_surface = false;
-
 				LOGI("VidExtFuncGLSwapBuf: New surface has been detected");
 
+                if (surface != EGL_NO_SURFACE) {
+                    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+                    eglDestroySurface(display, surface);
+                    surface = EGL_NO_SURFACE;
+                }
                 ANativeWindow_setBuffersGeometry(native_window, 0, 0, WINDOW_FORMAT_RGBA_8888);
+
 				if (!(surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)native_window, windowAttribList))) {
 				LOGE("eglCreateWindowSurface() returned error %d", eglGetError());
 				return M64ERR_INVALID_STATE;
@@ -998,12 +1051,20 @@ extern DECLSPEC m64p_error VidExtFuncGLSwapBuf()
 				oldVsync = vsync;
 			}
 
-				if (!isPaused && !eglSwapBuffers(display, surface)) {
-                    LOGE("eglSwapBuffers() returned error %d", eglGetError());
+				if (!isPaused) {
+                    swapAttemptCount++;
+                    if (!eglSwapBuffers(display, surface)) {
+                        lastSwapError = eglGetError();
+                        swapFailureCount++;
+                        LOGE("eglSwapBuffers() returned error %d", lastSwapError);
+                    } else {
+                        lastSwapError = EGL_SUCCESS;
+                    }
 				}
 		}
-	}
-
+	} else {
+        missingWindowCount++;
+    }
 	if (g_rc_client) {
 		if (isPaused)
 			rc_client_idle(g_rc_client);
@@ -1031,19 +1092,55 @@ extern "C" DECLSPEC void setNativeWindow(JNIEnv* env, jobject native_surface)
 {
 	std::unique_lock<std::mutex> guard(nativeWindowAccess);
 
-	LOGI("setNativeWindow: New surface has been set");
-
     if (native_window != nullptr) {
         ANativeWindow_release(native_window);
         native_window = nullptr;
     }
-    if (native_surface != nullptr) {
-        native_window = ANativeWindow_fromSurface(env, native_surface);
+    new_surface = false;
+
+    if (native_surface == nullptr) {
+        LOGW("setNativeWindow: surface nula; janela EGL liberada");
+        return;
     }
-		new_surface = native_window != nullptr;
+
+    native_window = ANativeWindow_fromSurface(env, native_surface);
+    if (native_window == nullptr) {
+        LOGE("setNativeWindow: ANativeWindow_fromSurface retornou nulo");
+        return;
+    }
+
+    const int width = ANativeWindow_getWidth(native_window);
+    const int height = ANativeWindow_getHeight(native_window);
+    const int format = ANativeWindow_getFormat(native_window);
+    lastWindowWidth = width;
+    lastWindowHeight = height;
+    lastWindowFormat = format;
+    LOGI("setNativeWindow: window=%p valid=%d size=%dx%d format=%d", native_window,
+         ANativeWindow_getWidth(native_window) > 0 && ANativeWindow_getHeight(native_window) > 0,
+         width, height, format);
+        new_surface = true;
+}
+
+extern "C" DECLSPEC const char* getVideoDiagnostics(void)
+{
+    static thread_local char diagnostics[512];
+    std::unique_lock<std::mutex> guard(nativeWindowAccess);
+    snprintf(diagnostics, sizeof(diagnostics),
+             "egl=%s mode=%s window=%s %dx%d fmt=%d surface=%s swaps=%llu fail=%llu missing=%llu err=0x%x",
+             videoInitialized ? "ready" : "off",
+             videoModeReady ? "ready" : "off",
+             native_window != nullptr ? "yes" : "no",
+             lastWindowWidth, lastWindowHeight, lastWindowFormat,
+             surface != EGL_NO_SURFACE ? "yes" : "no",
+             static_cast<unsigned long long>(swapAttemptCount),
+             static_cast<unsigned long long>(swapFailureCount),
+             static_cast<unsigned long long>(missingWindowCount),
+             static_cast<unsigned int>(lastSwapError));
+    return diagnostics;
 }
 
 extern "C" DECLSPEC void unsetNativeWindow(void)
+
 {
 	std::unique_lock<std::mutex> guard(nativeWindowAccess);
 

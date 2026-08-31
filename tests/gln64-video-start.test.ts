@@ -26,6 +26,25 @@ describe("GLideN64 video extension diagnostics", () => {
   });
 });
 
+const bridgeHeaderPath = fileURLToPath(
+  new NodeURL("../vendor/mupen64plus-ae/ae-bridge/src/ae_bridge.h", import.meta.url),
+);
+const bridgeHeaderSource = readFileSync(bridgeHeaderPath, "utf8");
+const bridgeSourcePath = fileURLToPath(
+  new NodeURL("../vendor/mupen64plus-ae/ae-bridge/src/ae_bridge.cpp", import.meta.url),
+);
+const bridgeSource = readFileSync(bridgeSourcePath, "utf8");
+
+describe("ae-bridge surface ownership", () => {
+  it("declares the video extension table once and handles a null Surface", () => {
+    expect(bridgeHeaderSource).toContain("extern m64p_video_extension_functions vidExtFunctions;");
+    expect(bridgeHeaderSource).not.toContain("vidExtFunctions = {14,");
+    expect(bridgeSource).toContain("m64p_video_extension_functions vidExtFunctions = {14,");
+    expect(bridgeSource).toContain("surface nula; janela EGL liberada");
+    expect(bridgeSource).toContain("ANativeWindow_fromSurface retornou nulo");
+  });
+});
+
 const runnerPath = fileURLToPath(
   new NodeURL("../modules/n64-core/android/src/main/cpp/n64_runner.cpp", import.meta.url),
 );
@@ -35,6 +54,13 @@ describe("N64 JNI video override", () => {
   it("rejects an override that the core does not accept", () => {
     expect(runnerSource).toContain("if (g_override_video() != 0)");
     expect(runnerSource).toContain("O core não aceitou a tabela de funções de vídeo");
+  });
+
+  it("passes the core debug callback and exposes video diagnostics", () => {
+    expect(runnerSource).toContain("core_debug_callback");
+    expect(runnerSource).toContain("nativeGetVideoDiagnostics");
+    expect(bridgeSource).toContain("getVideoDiagnostics");
+    expect(bridgeSource).toContain("swapAttemptCount");
   });
 });
 

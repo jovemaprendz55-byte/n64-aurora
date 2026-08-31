@@ -53,20 +53,54 @@ object N64SessionController {
 
   @Synchronized
   fun attachSurface(surface: Surface?, viewSessionId: String?) {
+    // Surface callbacks from a view that belongs to an older session must not
+    // replace the window of the currently selected ROM.
+    if (!viewSessionId.isNullOrEmpty() && viewSessionId != sessionId) return
+
+    val previousSurface = this.surface
+    if (!Mupen64Bridge.isLinked) return
+
+    // `surfaceChanged` is commonly delivered immediately after `surfaceCreated`
+    // with the same Surface object. Reattaching it would mark a healthy EGL
+    // window as new while the first frame is being rendered.
+    if (surface != null && previousSurface === surface && state == N64SessionState.RUNNING) return
+
     this.surface = surface
-    if (surface != null && Mupen64Bridge.isLinked && state == N64SessionState.PREPARED && Mupen64Bridge.attachSurface(surface)) {
-      val error = Mupen64Bridge.start(romPath, configPath, dataPath)
-      if (error == null) {
-        state = N64SessionState.RUNNING
-        message = "Sessão conectada à superfície de vídeo."
-      } else {
-        state = N64SessionState.ERROR
-        message = error
+
+    // Always notify native code when the SurfaceView is destroyed. Keeping the
+    // old ANativeWindow alive makes Android 16 present into a stale buffer queue.
+    if (surface == null) {
+      Mupen64Bridge.attachSurface(null)
+      if (state == N64SessionState.RUNNING) {
+        state = N64SessionState.PAUSED
+        message = "A superfície de vídeo foi liberada."
       }
+      return
     }
-    if (surface == null && state == N64SessionState.RUNNING) {
-      state = N64SessionState.PAUSED
-      message = "A superfície de vídeo foi liberada."
+
+    if (!Mupen64Bridge.attachSurface(surface)) {
+      state = N64SessionState.ERROR
+      message = "Não foi possível anexar a superfície de vídeo nativa."
+      return
+    }
+
+    when (state) {
+      N64SessionState.PREPARED -> {
+        val error = Mupen64Bridge.start(romPath, configPath, dataPath)
+        if (error == null) {
+          state = N64SessionState.RUNNING
+          message = "Sessão conectada à superfície de vídeo."
+        } else {
+          state = N64SessionState.ERROR
+          message = error
+        }
+      }
+      N64SessionState.PAUSED -> {
+        Mupen64Bridge.resume()
+        state = N64SessionState.RUNNING
+        message = "Sessão reconectada à superfície de vídeo."
+      }
+      else -> Unit
     }
   }
 
@@ -136,6 +170,7 @@ object N64SessionController {
     "message" to message,
     "hasSurface" to (surface != null),
     "gameId" to gameId,
-    "profileId" to profileId
+    "profileId" to profileId,
+    "videoDiagnostics" to if (Mupen64Bridge.isLinked) Mupen64Bridge.videoDiagnostics() else "bridge=unavailable"
   )
 }

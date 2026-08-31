@@ -55,3 +55,9 @@
 - [x] Recompilar o APK com a propagação de falha do plugin; o workflow 33295215333 concluiu com sucesso.
 - [ ] Instalar o APK 33295215333 no Android 16 e testar a mensagem de erro ou a imagem do jogo.
 - [x] Tornar opcional o callback Java `RetroAchievementsManager` no ae-bridge, pois esta integração não oferece RetroAchievements e sua ausência não pode bloquear o carregamento do núcleo Mupen64Plus-AE.
+- [ ] Nova ocorrência: APK 33295215333 ainda apresenta tela preta no Android 16; coletar evidências reais de EGL, superfície e entrega de frames.
+- [ ] Verificar se o loop do core está produzindo frames e se a SurfaceView está recebendo a janela/buffer geometry corretos.
+- [ ] Corrigir a causa identificada, recompilar o APK e repetir o teste visual no Android 16.
+- [x] Corrigir o ciclo de vida da SurfaceView para ignorar callbacks de views antigas, evitar reanexo redundante e liberar corretamente a janela nativa.
+- [x] Garantir uma única instância da tabela `vidExtFunctions` e instalar callback de debug do core Mupen64Plus.
+- [x] Expor diagnóstico de vídeo no snapshot da sessão, incluindo estado EGL, dimensões/formato da janela, swaps e falhas; `pnpm check` e 13 testes Vitest passaram.

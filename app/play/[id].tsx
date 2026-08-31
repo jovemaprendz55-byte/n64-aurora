@@ -21,6 +21,7 @@ export default function PlayGameScreen() {
   const [bridgeInstalled, setBridgeInstalled] = useState(false);
   const [bridgeStatus, setBridgeStatus] = useState<NativeBridgeStatus>("missing-module");
   const [nativeMessage, setNativeMessage] = useState("");
+  const [videoDiagnostics, setVideoDiagnostics] = useState("");
   const [sessionId, setSessionId] = useState("");
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function PlayGameScreen() {
             : "core-unavailable";
       let nextSessionId = "";
       let nextMessage = snapshot?.message ?? "";
+      let nextVideoDiagnostics = snapshot?.videoDiagnostics ?? "";
       if (selectedGame && available) {
         try {
           const session = await N64Core.launchSession({ romUri: selectedGame.uri, gameId: selectedGame.id, profileId: profile.id });
@@ -60,6 +62,7 @@ export default function PlayGameScreen() {
         setBridgeInstalled(bridge);
         setBridgeStatus(status);
         setNativeMessage(nextMessage);
+        setVideoDiagnostics(nextVideoDiagnostics);
         setSessionId(nextSessionId);
         setIsLaunching(false);
       }
@@ -67,6 +70,26 @@ export default function PlayGameScreen() {
     launch();
     return () => { isMounted = false; N64Core.stop(); };
   }, [id]);
+
+  useEffect(() => {
+    if (isLaunching || !bridgeInstalled) return;
+    let active = true;
+    const refreshSnapshot = async () => {
+      const snapshot = await N64Core.getSnapshot();
+      if (!active || !snapshot) return;
+      setNativeMessage(snapshot.message);
+      setVideoDiagnostics(snapshot.videoDiagnostics ?? "");
+      if (snapshot.sessionId) setSessionId(snapshot.sessionId);
+      const sessionIsVisible = snapshot.state === "running" || snapshot.state === "paused";
+      setNativeAvailable(snapshot.coreLinked && sessionIsVisible);
+    };
+    void refreshSnapshot();
+    const timer = setInterval(() => { void refreshSnapshot(); }, 500);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [bridgeInstalled, isLaunching]);
 
   if (isLaunching) {
     return <ScreenContainer className="items-center justify-center"><StatusBar style="light" /><ActivityIndicator color="#22D3EE" /></ScreenContainer>;
@@ -85,6 +108,7 @@ export default function PlayGameScreen() {
         <View style={styles.viewport}>
           <View style={styles.viewportGrid} />
           {bridgeInstalled ? <N64CoreView sessionId={sessionId} style={StyleSheet.absoluteFill} /> : null}
+          {videoDiagnostics ? <Text style={styles.diagnostics} numberOfLines={2}>{videoDiagnostics}</Text> : null}
           {!nativeAvailable ? <View style={styles.videoPlaceholder}>
             <MaterialIcons name={bridgeStatus === "missing-module" ? "memory" : "developer-board"} size={33} color="#22D3EE" />
             <Text style={styles.videoTitle}>
@@ -129,6 +153,7 @@ const styles = StyleSheet.create({
   videoPlaceholder: { width: "79%", alignItems: "center", padding: 20, borderRadius: 18, backgroundColor: "rgba(23, 28, 49, 0.78)", borderWidth: 1, borderColor: "rgba(34,211,238,0.18)" },
   videoTitle: { color: "#F7F8FC", fontSize: 15, fontWeight: "800", marginTop: 9 },
   videoText: { color: "#A8B0C4", fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 5 },
+  diagnostics: { position: "absolute", left: 12, right: 12, bottom: 8, zIndex: 4, color: "#7DE3F3", fontSize: 9, lineHeight: 12, textAlign: "center", fontFamily: "monospace" },
   controlArea: { flex: 1, minHeight: 292, marginTop: 8, position: "relative" },
   previewCaption: { position: "absolute", alignSelf: "center", bottom: 11, color: "#747F99", fontSize: 11, fontWeight: "700", letterSpacing: 0.4 },
   bottomBar: { height: 52, borderRadius: 17, backgroundColor: "#141827", borderWidth: 1, borderColor: "#2A3146", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 11 },

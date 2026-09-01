@@ -74,3 +74,5 @@
 - [x] Nova ocorrência analisada: ao tocar em Jogar, o aplicativo fechava durante a inicialização porque o carregamento do áudio falhava por dependência nativa ausente.
 - [x] Rastrear `nativeStart`, `CoreStartup`, `ROM_OPEN`, anexação de plugins e thread de emulação; a causa encontrada foi o `libsoundtouch.so` excluído do APK arm64.
 - [x] Adicionar carregamento opcional do áudio e corrigir o empacotamento da dependência SoundTouch; o novo APK ainda precisa ser testado no aparelho.
+- [x] Recompilar o APK após incluir `libsoundtouch.so` e `libsoundtouch_fp.so`; o workflow 33489817301 concluiu e o APK foi validado como íntegro.
+- [ ] Instalar o APK 33489817301 no Android 16 e confirmar que tocar em Jogar não fecha o aplicativo.

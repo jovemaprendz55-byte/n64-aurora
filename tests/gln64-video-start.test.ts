@@ -49,6 +49,10 @@ const runnerPath = fileURLToPath(
   new NodeURL("../modules/n64-core/android/src/main/cpp/n64_runner.cpp", import.meta.url),
 );
 const runnerSource = readFileSync(runnerPath, "utf8");
+const audioGradlePath = fileURLToPath(
+  new NodeURL("../vendor/mupen64plus-ae/mupen64plus-audio-android/build.gradle", import.meta.url),
+);
+const audioGradleSource = readFileSync(audioGradlePath, "utf8");
 
 describe("N64 JNI video override", () => {
   it("rejects an override that the core does not accept", () => {
@@ -65,6 +69,8 @@ describe("N64 JNI video override", () => {
     expect(runnerSource).toContain("vídeo continuará disponível");
     expect(runnerSource).toContain("load_optional_library(g_audio");
     expect(runnerSource).toContain("g_audio != nullptr && g_attach_plugin(kPluginAudio, g_audio)");
+    expect(audioGradleSource).not.toContain("excludes +=");
+    expect(audioGradleSource).toContain("useLegacyPackaging = true");
   });
 });
 

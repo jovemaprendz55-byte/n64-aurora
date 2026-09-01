@@ -66,7 +66,11 @@
 - [x] Tornar callbacks JNI de entrada opcionais para que um símbolo ausente não bloqueie o carregamento do vídeo; o erro de símbolo obrigatório agora é informado no diagnóstico.
 - [x] Recompilar a correção de anexação da SurfaceView; o workflow 33484467889 concluiu e o APK foi validado como íntegro.
 - [ ] Instalar o APK 33484467889 no Android 16 e confirmar se a SurfaceView deixa de retornar falso.
-- [ ] Evidência do aparelho: `libmupen64plus-audio-android.so` falha no `dlopen`, impedindo a sessão antes da anexação da SurfaceView.
+- [x] Confirmar no aparelho que `libmupen64plus-audio-android.so` falha no `dlopen`; a causa adicional era a exclusão de `libsoundtouch.so` do APK arm64.
 - [x] Tornar o plugin de áudio opcional e manter vídeo/controles carregáveis quando `libmupen64plus-audio-android.so` falhar; o aviso é enviado ao logcat.
+- [x] Remover a exclusão de `libsoundtouch.so` do módulo de áudio para que a dependência seja empacotada no APK arm64.
 - [x] Recompilar o APK após tornar o áudio opcional; o workflow 33486534002 concluiu e o pacote foi validado como íntegro.
 - [ ] Instalar o APK 33486534002 no Android 16 e confirmar se o vídeo inicia mesmo sem o plugin de áudio.
+- [x] Nova ocorrência analisada: ao tocar em Jogar, o aplicativo fechava durante a inicialização porque o carregamento do áudio falhava por dependência nativa ausente.
+- [x] Rastrear `nativeStart`, `CoreStartup`, `ROM_OPEN`, anexação de plugins e thread de emulação; a causa encontrada foi o `libsoundtouch.so` excluído do APK arm64.
+- [x] Adicionar carregamento opcional do áudio e corrigir o empacotamento da dependência SoundTouch; o novo APK ainda precisa ser testado no aparelho.

@@ -55,7 +55,9 @@ android {
     }
     packagingOptions {
         jniLibs {
-            excludes += ['lib/x86/libsoundtouch.so', 'lib/x86_64/libsoundtouch.so', 'lib/armeabi-v7a/libsoundtouch.so', 'lib/arm64-v8a/libsoundtouch.so', 'lib/x86/libsoundtouch_fp.so', 'lib/x86_64/libsoundtouch_fp.so', 'lib/armeabi-v7a/libsoundtouch_fp.so', 'lib/arm64-v8a/libsoundtouch_fp.so']
+            // The audio plugin links SoundTouch at runtime; do not exclude the
+            // arm64 shared libraries or dlopen(libmupen64plus-audio-android.so)
+            // will fail on the device.
             useLegacyPackaging = true
         }
     }

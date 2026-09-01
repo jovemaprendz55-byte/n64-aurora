@@ -68,4 +68,5 @@
 - [ ] Instalar o APK 33484467889 no Android 16 e confirmar se a SurfaceView deixa de retornar falso.
 - [ ] Evidência do aparelho: `libmupen64plus-audio-android.so` falha no `dlopen`, impedindo a sessão antes da anexação da SurfaceView.
 - [x] Tornar o plugin de áudio opcional e manter vídeo/controles carregáveis quando `libmupen64plus-audio-android.so` falhar; o aviso é enviado ao logcat.
-- [ ] Recompilar e testar o APK no Android 16 após a correção do carregamento de áudio.
+- [x] Recompilar o APK após tornar o áudio opcional; o workflow 33486534002 concluiu e o pacote foi validado como íntegro.
+- [ ] Instalar o APK 33486534002 no Android 16 e confirmar se o vídeo inicia mesmo sem o plugin de áudio.

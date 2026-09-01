@@ -66,3 +66,6 @@
 - [x] Tornar callbacks JNI de entrada opcionais para que um símbolo ausente não bloqueie o carregamento do vídeo; o erro de símbolo obrigatório agora é informado no diagnóstico.
 - [x] Recompilar a correção de anexação da SurfaceView; o workflow 33484467889 concluiu e o APK foi validado como íntegro.
 - [ ] Instalar o APK 33484467889 no Android 16 e confirmar se a SurfaceView deixa de retornar falso.
+- [ ] Evidência do aparelho: `libmupen64plus-audio-android.so` falha no `dlopen`, impedindo a sessão antes da anexação da SurfaceView.
+- [x] Tornar o plugin de áudio opcional e manter vídeo/controles carregáveis quando `libmupen64plus-audio-android.so` falhar; o aviso é enviado ao logcat.
+- [ ] Recompilar e testar o APK no Android 16 após a correção do carregamento de áudio.

@@ -95,17 +95,26 @@ bool load_library(void*& handle, const char* name) {
   return false;
 }
 
+bool load_optional_library(void*& handle, const char* name) {
+  handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+  if (handle != nullptr) return true;
+  const char* error = dlerror();
+  __android_log_print(ANDROID_LOG_WARN, kTag, "Biblioteca opcional indisponível: %s: %s", name,
+                      error == nullptr ? "erro desconhecido" : error);
+  return false;
+}
+
 bool load_engine() {
   if (g_core != nullptr) return true;
   if (!load_library(g_bridge, "libae-bridge.so") ||
       !load_library(g_core, "libmupen64plus-core.so") ||
       !load_library(g_rsp, "libmupen64plus-rsp-hle.so") ||
-      !load_library(g_gfx, "libmupen64plus-video-gln64.so") ||
-      !load_library(g_audio, "libmupen64plus-audio-android.so") ||
-      !load_library(g_input, "libmupen64plus-input-android.so")) {
+      !load_library(g_gfx, "libmupen64plus-video-gln64.so")) {
     close_plugins();
     return false;
   }
+  load_optional_library(g_audio, "libmupen64plus-audio-android.so");
+  load_optional_library(g_input, "libmupen64plus-input-android.so");
 
   g_shutdown = reinterpret_cast<CoreShutdown>(dlsym(g_core, "CoreShutdown"));
   g_attach_plugin = reinterpret_cast<CoreAttachPlugin>(dlsym(g_core, "CoreAttachPlugin"));
@@ -251,8 +260,10 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
 
   // O frontend Mupen64Plus só aceita CoreAttachPlugin depois de ROM_OPEN;
   // plugin_start_gfx também precisa dos dados da ROM para criar a saída de vídeo.
-  if (g_attach_plugin(kPluginGfx, g_gfx) != 0 || g_attach_plugin(kPluginAudio, g_audio) != 0 ||
-      g_attach_plugin(kPluginInput, g_input) != 0 || g_attach_plugin(kPluginRsp, g_rsp) != 0) {
+  if (g_attach_plugin(kPluginGfx, g_gfx) != 0 ||
+      (g_audio != nullptr && g_attach_plugin(kPluginAudio, g_audio) != 0) ||
+      (g_input != nullptr && g_attach_plugin(kPluginInput, g_input) != 0) ||
+      g_attach_plugin(kPluginRsp, g_rsp) != 0) {
     set_error("O core Mupen64Plus-AE recusou a inicialização de um plugin após abrir a ROM.");
     g_shutdown();
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -260,7 +271,7 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
     close_plugins();
     return env->NewStringUTF(g_last_error.c_str());
   }
-  g_set_input_config(env, nullptr, 0, JNI_TRUE, kPakMemory);
+  if (g_set_input_config != nullptr) g_set_input_config(env, nullptr, 0, JNI_TRUE, kPakMemory);
 
   {
     std::lock_guard<std::mutex> lock(g_mutex);

@@ -63,6 +63,8 @@ describe("N64 JNI video override", () => {
     expect(bridgeSource).toContain("swapAttemptCount");
     expect(runnerSource).toContain("Plugin de entrada sem callback JNI");
     expect(runnerSource).toContain("vídeo continuará disponível");
+    expect(runnerSource).toContain("load_optional_library(g_audio");
+    expect(runnerSource).toContain("g_audio != nullptr && g_attach_plugin(kPluginAudio, g_audio)");
   });
 });
 

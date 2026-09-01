@@ -117,11 +117,21 @@ bool load_engine() {
   g_set_input_state = reinterpret_cast<SetInputState>(dlsym(g_input, "Java_paulscode_android_mupen64plusae_jni_NativeInput_setState"));
   g_get_video_diagnostics = reinterpret_cast<GetVideoDiagnostics>(dlsym(g_bridge, "getVideoDiagnostics"));
 
-  if (g_shutdown == nullptr || g_attach_plugin == nullptr || g_do_command == nullptr || g_set_window == nullptr ||
-      g_unset_window == nullptr || g_override_video == nullptr || g_set_input_config == nullptr || g_set_input_state == nullptr) {
-    set_error("A API esperada do core, do ae-bridge ou do plugin de entrada não foi encontrada.");
+  const char* missing_symbol = nullptr;
+  if (g_shutdown == nullptr) missing_symbol = "CoreShutdown";
+  else if (g_attach_plugin == nullptr) missing_symbol = "CoreAttachPlugin";
+  else if (g_do_command == nullptr) missing_symbol = "CoreDoCommand";
+  else if (g_set_window == nullptr) missing_symbol = "setNativeWindow";
+  else if (g_unset_window == nullptr) missing_symbol = "unsetNativeWindow";
+  else if (g_override_video == nullptr) missing_symbol = "overrideAeVidExtFuncs";
+  if (missing_symbol != nullptr) {
+    set_error(std::string("Símbolo nativo obrigatório ausente: ") + missing_symbol);
     close_plugins();
     return false;
+  }
+  if (g_set_input_config == nullptr || g_set_input_state == nullptr) {
+    __android_log_print(ANDROID_LOG_WARN, kTag,
+                        "Plugin de entrada sem callback JNI; vídeo continuará disponível e os controles serão ignorados.");
   }
   return true;
 }
@@ -270,7 +280,9 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
 extern "C" JNIEXPORT jstring JNICALL
 Java_expo_modules_n64core_Mupen64Bridge_nativeGetVideoDiagnostics(JNIEnv* env, jobject) {
   std::lock_guard<std::mutex> lock(g_mutex);
-  if (g_get_video_diagnostics == nullptr) return env->NewStringUTF("bridge=unavailable");
+  if (g_get_video_diagnostics == nullptr) {
+    return env->NewStringUTF(g_last_error.empty() ? "bridge=diagnostics-symbol-missing" : g_last_error.c_str());
+  }
   const char* diagnostics = g_get_video_diagnostics();
   return env->NewStringUTF(diagnostics == nullptr ? "bridge=empty" : diagnostics);
 }

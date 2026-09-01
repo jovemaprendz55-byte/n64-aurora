@@ -61,6 +61,8 @@ describe("N64 JNI video override", () => {
     expect(runnerSource).toContain("nativeGetVideoDiagnostics");
     expect(bridgeSource).toContain("getVideoDiagnostics");
     expect(bridgeSource).toContain("swapAttemptCount");
+    expect(runnerSource).toContain("Plugin de entrada sem callback JNI");
+    expect(runnerSource).toContain("vídeo continuará disponível");
   });
 });
 

@@ -62,3 +62,6 @@
 - [x] Corrigir o ciclo de vida da SurfaceView para ignorar callbacks de views antigas, evitar reanexo redundante e liberar corretamente a janela nativa.
 - [x] Garantir uma única instância da tabela `vidExtFunctions` e instalar callback de debug do core Mupen64Plus.
 - [x] Expor diagnóstico de vídeo no snapshot da sessão, incluindo estado EGL, dimensões/formato da janela, swaps e falhas; `pnpm check` e 13 testes Vitest passaram.
+- [ ] Evidência do aparelho: a tela mostra `Núcleo nativo indisponível`, `Não foi possível anexar a superfície de vídeo nativa` e `bridge=unavailable`; investigar o retorno falso de `nativeAttachSurface`.
+- [x] Tornar callbacks JNI de entrada opcionais para que um símbolo ausente não bloqueie o carregamento do vídeo; o erro de símbolo obrigatório agora é informado no diagnóstico.
+- [ ] Recompilar e testar a correção de anexação da SurfaceView no Android 16.

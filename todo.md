@@ -64,4 +64,5 @@
 - [x] Expor diagnóstico de vídeo no snapshot da sessão, incluindo estado EGL, dimensões/formato da janela, swaps e falhas; `pnpm check` e 13 testes Vitest passaram.
 - [ ] Evidência do aparelho: a tela mostra `Núcleo nativo indisponível`, `Não foi possível anexar a superfície de vídeo nativa` e `bridge=unavailable`; investigar o retorno falso de `nativeAttachSurface`.
 - [x] Tornar callbacks JNI de entrada opcionais para que um símbolo ausente não bloqueie o carregamento do vídeo; o erro de símbolo obrigatório agora é informado no diagnóstico.
-- [ ] Recompilar e testar a correção de anexação da SurfaceView no Android 16.
+- [x] Recompilar a correção de anexação da SurfaceView; o workflow 33484467889 concluiu e o APK foi validado como íntegro.
+- [ ] Instalar o APK 33484467889 no Android 16 e confirmar se a SurfaceView deixa de retornar falso.

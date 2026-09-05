@@ -113,7 +113,13 @@ bool load_engine() {
     close_plugins();
     return false;
   }
-  load_optional_library(g_audio, "libmupen64plus-audio-android.so");
+  // Audio is intentionally disabled until the Android 16 Oboe path is stable.
+  // A successful dlopen is not enough: the plugin opens an audio stream during
+  // ROM_OPEN and can terminate the process on devices that reject the requested
+  // exclusive low-latency stream. Video must remain usable without audio.
+  g_audio = nullptr;
+  __android_log_print(ANDROID_LOG_WARN, kTag,
+                      "Plugin de áudio desativado para manter a sessão de vídeo estável");
   load_optional_library(g_input, "libmupen64plus-input-android.so");
 
   g_shutdown = reinterpret_cast<CoreShutdown>(dlsym(g_core, "CoreShutdown"));
@@ -261,7 +267,6 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
   // O frontend Mupen64Plus só aceita CoreAttachPlugin depois de ROM_OPEN;
   // plugin_start_gfx também precisa dos dados da ROM para criar a saída de vídeo.
   if (g_attach_plugin(kPluginGfx, g_gfx) != 0 ||
-      (g_audio != nullptr && g_attach_plugin(kPluginAudio, g_audio) != 0) ||
       (g_input != nullptr && g_attach_plugin(kPluginInput, g_input) != 0) ||
       g_attach_plugin(kPluginRsp, g_rsp) != 0) {
     set_error("O core Mupen64Plus-AE recusou a inicialização de um plugin após abrir a ROM.");

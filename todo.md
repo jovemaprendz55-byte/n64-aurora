@@ -76,3 +76,7 @@
 - [x] Adicionar carregamento opcional do áudio e corrigir o empacotamento da dependência SoundTouch; o novo APK ainda precisa ser testado no aparelho.
 - [x] Recompilar o APK após incluir `libsoundtouch.so` e `libsoundtouch_fp.so`; o workflow 33489817301 concluiu e o APK foi validado como íntegro.
 - [ ] Instalar o APK 33489817301 no Android 16 e confirmar que tocar em Jogar não fecha o aplicativo.
+- [ ] Clarificação do usuário: o app abre normalmente; o crash ocorre somente após tocar em Jogar, durante o carregamento da ROM.
+- [x] Confirmar que a ROM é passada corretamente como bytes ao `M64CMD_ROM_OPEN`; o crash não vinha do formato da ROM.
+- [x] Desativar o plugin de áudio no caminho Android 16 para impedir que a abertura do stream Oboe encerre o processo durante `ROM_OPEN`/`Execute`; vídeo, RSP e controles continuam disponíveis.
+- [ ] Recompilar e testar no Android 16 se tocar em Jogar deixa de fechar o aplicativo.

@@ -80,3 +80,5 @@
 - [x] Confirmar que a ROM é passada corretamente como bytes ao `M64CMD_ROM_OPEN`; o crash não vinha do formato da ROM.
 - [x] Desativar o plugin de áudio no caminho Android 16 para impedir que a abertura do stream Oboe encerre o processo durante `ROM_OPEN`/`Execute`; vídeo, RSP e controles continuam disponíveis.
 - [ ] Recompilar e testar no Android 16 se tocar em Jogar deixa de fechar o aplicativo.
+- [x] Recompilar o APK sem inicializar o plugin Oboe; o workflow 33946254682 concluiu e o pacote foi validado como íntegro.
+- [ ] Instalar o APK 33946254682 no Android 16 e confirmar se tocar em Jogar deixa de fechar o aplicativo.

@@ -82,3 +82,6 @@
 - [ ] Recompilar e testar no Android 16 se tocar em Jogar deixa de fechar o aplicativo.
 - [x] Recompilar o APK sem inicializar o plugin Oboe; o workflow 33946254682 concluiu e o pacote foi validado como íntegro.
 - [ ] Instalar o APK 33946254682 no Android 16 e confirmar se tocar em Jogar deixa de fechar o aplicativo.
+- [x] Evidência do logcat: `SIGSEGV` por ponteiro nulo em `libmupen64plus-video-gln64.so`, `InitiateGFX+248`, chamado por `CoreAttachPlugin` durante `nativeStart`.
+- [x] Corrigir a chamada indireta nula dentro de `InitiateGFX` adicionando fallback para callbacks do ae-bridge e recusando a inicialização quando callbacks essenciais estiverem ausentes.
+- [ ] Recompilar e testar no Android 16 se tocar em Jogar deixa de encerrar o aplicativo.

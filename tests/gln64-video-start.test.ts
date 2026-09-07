@@ -12,6 +12,12 @@ describe("GLideN64 startup error propagation", () => {
     expect(source).toContain("if (!OGL_Start())");
     expect(source).toContain("return 0;");
   });
+
+  it("resolves ae-bridge callbacks and rejects null video targets", () => {
+    expect(source).toContain("dlsym(RTLD_DEFAULT, bridge_name)");
+    expect(source).toContain("VidExtFuncInit");
+    expect(source).toContain("Video extension callbacks are unavailable");
+  });
 });
 
 const openGlSourcePath = fileURLToPath(

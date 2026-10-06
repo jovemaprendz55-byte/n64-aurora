@@ -22,6 +22,16 @@
 
 ptr_ConfigGetSharedDataFilepath ConfigGetSharedDataFilepath = NULL;
 
+static void* lookup_video_callback(m64p_dynlib_handle core_handle,
+                                   const char* core_name,
+                                   const char* bridge_name)
+{
+    void* callback = core_handle == NULL ? NULL : dlsym(core_handle, core_name);
+    if (callback == NULL && bridge_name != NULL)
+        callback = dlsym(RTLD_DEFAULT, bridge_name);
+    return callback;
+}
+
 /* definitions of pointers to Core video extension functions */
 ptr_VidExt_Init                  CoreVideo_Init = NULL;
 ptr_VidExt_Quit                  CoreVideo_Quit = NULL;
@@ -49,18 +59,29 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle,
     ConfigGetSharedDataFilepath = (ptr_ConfigGetSharedDataFilepath)
             dlsym(CoreLibHandle, "ConfigGetSharedDataFilepath");
 
-    /* Get the core Video Extension function pointers from the library handle */
-    CoreVideo_Init = (ptr_VidExt_Init) dlsym(CoreLibHandle, "VidExt_Init");
-    CoreVideo_Quit = (ptr_VidExt_Quit) dlsym(CoreLibHandle, "VidExt_Quit");
-    CoreVideo_ListFullscreenModes = (ptr_VidExt_ListFullscreenModes) dlsym(CoreLibHandle, "VidExt_ListFullscreenModes");
-    CoreVideo_SetVideoMode = (ptr_VidExt_SetVideoMode) dlsym(CoreLibHandle, "VidExt_SetVideoMode");
-    CoreVideo_SetCaption = (ptr_VidExt_SetCaption) dlsym(CoreLibHandle, "VidExt_SetCaption");
-    CoreVideo_ToggleFullScreen = (ptr_VidExt_ToggleFullScreen) dlsym(CoreLibHandle, "VidExt_ToggleFullScreen");
-    CoreVideo_ResizeWindow = (ptr_VidExt_ResizeWindow) dlsym(CoreLibHandle, "VidExt_ResizeWindow");
-    CoreVideo_GL_GetProcAddress = (ptr_VidExt_GL_GetProcAddress) dlsym(CoreLibHandle, "VidExt_GL_GetProcAddress");
-    CoreVideo_GL_SetAttribute = (ptr_VidExt_GL_SetAttribute) dlsym(CoreLibHandle, "VidExt_GL_SetAttribute");
-    CoreVideo_GL_GetAttribute = (ptr_VidExt_GL_GetAttribute) dlsym(CoreLibHandle, "VidExt_GL_GetAttribute");
-    CoreVideo_GL_SwapBuffers = (ptr_VidExt_GL_SwapBuffers) dlsym(CoreLibHandle, "VidExt_GL_SwapBuffers");
+    /* Resolve the normal core exports first, then use ae-bridge callbacks.
+       Android builds may hide VidExt_* from the core handle even though the
+       override table has already been installed. Never leave an indirect call
+       target null: InitiateGFX runs on the ROM-open path. */
+    CoreVideo_Init = (ptr_VidExt_Init) lookup_video_callback(CoreLibHandle, "VidExt_Init", "VidExtFuncInit");
+    CoreVideo_Quit = (ptr_VidExt_Quit) lookup_video_callback(CoreLibHandle, "VidExt_Quit", "VidExtFuncQuit");
+    CoreVideo_ListFullscreenModes = (ptr_VidExt_ListFullscreenModes) lookup_video_callback(CoreLibHandle, "VidExt_ListFullscreenModes", "VidExtFuncListModes");
+    CoreVideo_SetVideoMode = (ptr_VidExt_SetVideoMode) lookup_video_callback(CoreLibHandle, "VidExt_SetVideoMode", "VidExtFuncSetMode");
+    CoreVideo_SetCaption = (ptr_VidExt_SetCaption) lookup_video_callback(CoreLibHandle, "VidExt_SetCaption", "VidExtFuncSetCaption");
+    CoreVideo_ToggleFullScreen = (ptr_VidExt_ToggleFullScreen) lookup_video_callback(CoreLibHandle, "VidExt_ToggleFullScreen", "VidExtFuncToggleFS");
+    CoreVideo_ResizeWindow = (ptr_VidExt_ResizeWindow) lookup_video_callback(CoreLibHandle, "VidExt_ResizeWindow", "VidExtFuncResizeWindow");
+    CoreVideo_GL_GetProcAddress = (ptr_VidExt_GL_GetProcAddress) lookup_video_callback(CoreLibHandle, "VidExt_GL_GetProcAddress", "VidExtFuncGLGetProc");
+    CoreVideo_GL_SetAttribute = (ptr_VidExt_GL_SetAttribute) lookup_video_callback(CoreLibHandle, "VidExt_GL_SetAttribute", "VidExtFuncGLSetAttr");
+    CoreVideo_GL_GetAttribute = (ptr_VidExt_GL_GetAttribute) lookup_video_callback(CoreLibHandle, "VidExt_GL_GetAttribute", "VidExtFuncGLGetAttr");
+    CoreVideo_GL_SwapBuffers = (ptr_VidExt_GL_SwapBuffers) lookup_video_callback(CoreLibHandle, "VidExt_GL_SwapBuffers", "VidExtFuncGLSwapBuf");
+
+    if (CoreVideo_Init == NULL || CoreVideo_Quit == NULL ||
+        CoreVideo_SetVideoMode == NULL || CoreVideo_GL_GetProcAddress == NULL ||
+        CoreVideo_GL_SwapBuffers == NULL)
+    {
+        LOG(LOG_ERROR, "Video extension callbacks are unavailable; refusing graphics startup.\n");
+        return M64ERR_INPUT_ASSERT;
+    }
 
 #ifdef __NEON_OPT
     MathInitNeon();
@@ -322,6 +343,48 @@ EXPORT void CALL SetRenderingCallback(void (*callback)())
 }
 
 EXPORT void CALL SetFrameSkipping(bool autoSkip, int maxSkips)
+{
+    frameSkipper.setSkips(
+            autoSkip ? FrameSkipper::AUTO : FrameSkipper::MANUAL,
+            maxSkips);
+}
+
+EXPORT void CALL SetStretchVideo(bool stretch)
+{
+    config.stretchVideo = stretch;
+}
+
+EXPORT void CALL StartGL()
+{
+    OGL_Start();
+}
+
+EXPORT void CALL StopGL()
+{
+    OGL_Stop();
+}
+
+EXPORT void CALL ResizeGL(int width, int height)
+{
+    const float ratio = (config.romPAL ? 9.0f/11.0f : 0.75f);
+    int videoWidth = width;
+    int videoHeight = height;
+
+    if (!config.stretchVideo) {
+        videoWidth = (int) (height / ratio);
+        if (videoWidth > width) {
+            videoWidth = width;
+            videoHeight = (int) (width * ratio);
+        }
+    }
+    int x = (width - videoWidth) / 2;
+    int y = (height - videoHeight) / 2;
+
+    OGL_ResizeWindow(x, y, videoWidth, videoHeight);
+}
+
+} // extern "C"
+d CALL SetFrameSkipping(bool autoSkip, int maxSkips)
 {
     frameSkipper.setSkips(
             autoSkip ? FrameSkipper::AUTO : FrameSkipper::MANUAL,

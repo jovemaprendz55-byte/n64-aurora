@@ -1,4 +1,3 @@
-
 #include <dlfcn.h>
 #include <string.h>
 
@@ -384,46 +383,3 @@ EXPORT void CALL ResizeGL(int width, int height)
 }
 
 } // extern "C"
-d CALL SetFrameSkipping(bool autoSkip, int maxSkips)
-{
-    frameSkipper.setSkips(
-            autoSkip ? FrameSkipper::AUTO : FrameSkipper::MANUAL,
-            maxSkips);
-}
-
-EXPORT void CALL SetStretchVideo(bool stretch)
-{
-    config.stretchVideo = stretch;
-}
-
-EXPORT void CALL StartGL()
-{
-    OGL_Start();
-}
-
-EXPORT void CALL StopGL()
-{
-    OGL_Stop();
-}
-
-EXPORT void CALL ResizeGL(int width, int height)
-{
-    const float ratio = (config.romPAL ? 9.0f/11.0f : 0.75f);
-    int videoWidth = width;
-    int videoHeight = height;
-
-    if (!config.stretchVideo) {
-        videoWidth = (int) (height / ratio);
-        if (videoWidth > width) {
-            videoWidth = width;
-            videoHeight = (int) (width * ratio);
-        }
-    }
-    int x = (width - videoWidth) / 2;
-    int y = (height - videoHeight) / 2;
-
-    OGL_ResizeWindow(x, y, videoWidth, videoHeight);
-}
-
-} // extern "C"
-

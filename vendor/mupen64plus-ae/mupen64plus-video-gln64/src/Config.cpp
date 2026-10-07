@@ -242,7 +242,18 @@ void Config_LoadRomConfig(unsigned char* header)
 
     LOG(LOG_MINIMAL, "Rom is %s\n", config.romPAL ? "PAL" : "NTSC");
 
+    if (ConfigGetSharedDataFilepath == NULL)
+    {
+        LOG(LOG_WARNING, "ConfigGetSharedDataFilepath ausente; ignorando configuraÃ§Ã£o especÃ­fica da ROM.\n");
+        return;
+    }
+
     const char *filename = ConfigGetSharedDataFilepath("gln64rom.conf");
+    if (filename == NULL || filename[0] == '\0')
+    {
+        LOG(LOG_WARNING, "Caminho de gln64rom.conf vazio; usando configuraÃ§Ã£o global.\n");
+        return;
+    }
     FILE *f = fopen(filename,"r");
     if (!f)
     {
@@ -292,8 +303,19 @@ void Config_LoadConfig()
     // default configuration
     Config_SetDefault();
 
+    if (ConfigGetSharedDataFilepath == NULL)
+    {
+        LOG(LOG_WARNING, "ConfigGetSharedDataFilepath ausente; usando somente valores padrÃ£o.\n");
+        return;
+    }
+
     // read configuration
     const char *filename = ConfigGetSharedDataFilepath("gln64.conf");
+    if (filename == NULL || filename[0] == '\0')
+    {
+        LOG(LOG_WARNING, "Caminho de gln64.conf vazio; usando valores padrÃ£o.\n");
+        return;
+    }
     f = fopen(filename, "r");
     if (!f)
     {
@@ -331,4 +353,3 @@ void Config_LoadConfig()
         fclose(f);
     }
 }
-

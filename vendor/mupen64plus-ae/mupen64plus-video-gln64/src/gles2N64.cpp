@@ -35,8 +35,24 @@ static void* lookup_video_callback(m64p_dynlib_handle core_handle,
 {
     void* callback = core_handle == NULL ? NULL : dlsym(core_handle, core_name);
     if (callback == NULL && bridge_name != NULL)
-        callback = dlsym(RTLD_DEFAULT, bridge_name);
+    {
+        void* bridge_handle = dlopen("libae-bridge.so", RTLD_NOW | RTLD_NOLOAD);
+        if (bridge_handle == NULL)
+            bridge_handle = dlopen("libae-bridge.so", RTLD_NOW | RTLD_GLOBAL);
+        if (bridge_handle != NULL)
+            callback = dlsym(bridge_handle, bridge_name);
+        if (callback == NULL)
+            callback = dlsym(RTLD_DEFAULT, bridge_name);
+    }
     return callback;
+}
+
+static bool video_callbacks_ready()
+{
+    return CoreVideo_Init != NULL && CoreVideo_Quit != NULL &&
+           CoreVideo_SetVideoMode != NULL &&
+           CoreVideo_GL_GetProcAddress != NULL &&
+           CoreVideo_GL_SwapBuffers != NULL;
 }
 
 /* definitions of pointers to Core video extension functions */
@@ -90,9 +106,7 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle,
     CoreVideo_GL_GetAttribute = (ptr_VidExt_GL_GetAttribute) lookup_video_callback(CoreLibHandle, "VidExt_GL_GetAttribute", "VidExtFuncGLGetAttr");
     CoreVideo_GL_SwapBuffers = (ptr_VidExt_GL_SwapBuffers) lookup_video_callback(CoreLibHandle, "VidExt_GL_SwapBuffers", "VidExtFuncGLSwapBuf");
 
-    if (CoreVideo_Init == NULL || CoreVideo_Quit == NULL ||
-        CoreVideo_SetVideoMode == NULL || CoreVideo_GL_GetProcAddress == NULL ||
-        CoreVideo_GL_SwapBuffers == NULL)
+    if (!video_callbacks_ready())
     {
         LOG(LOG_ERROR, "Video extension callbacks are unavailable; refusing graphics startup.\n");
         return M64ERR_INPUT_ASSERT;
@@ -147,6 +161,12 @@ EXPORT void CALL MoveScreen (int xpos, int ypos)
 
 EXPORT int CALL InitiateGFX (GFX_INFO Gfx_Info)
 {
+    if (!video_callbacks_ready())
+    {
+        LOG(LOG_ERROR, "InitiateGFX blocked: required video callbacks are null.\n");
+        return 0;
+    }
+
     DMEM = Gfx_Info.DMEM;
     IMEM = Gfx_Info.IMEM;
     RDRAM = Gfx_Info.RDRAM;

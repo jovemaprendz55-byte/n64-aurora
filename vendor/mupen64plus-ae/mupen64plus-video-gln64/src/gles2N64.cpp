@@ -21,6 +21,14 @@
 
 ptr_ConfigGetSharedDataFilepath ConfigGetSharedDataFilepath = NULL;
 
+static const char* fallback_shared_data_filepath(const char* filename)
+{
+    /* Some Android core builds do not export this optional config helper.
+       Returning the filename keeps GLideN64 configuration non-fatal instead
+       of dereferencing a null function pointer during InitiateGFX. */
+    return filename == NULL ? "gln64.conf" : filename;
+}
+
 static void* lookup_video_callback(m64p_dynlib_handle core_handle,
                                    const char* core_name,
                                    const char* bridge_name)
@@ -57,6 +65,14 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle,
 {
     ConfigGetSharedDataFilepath = (ptr_ConfigGetSharedDataFilepath)
             dlsym(CoreLibHandle, "ConfigGetSharedDataFilepath");
+    if (ConfigGetSharedDataFilepath == NULL)
+        ConfigGetSharedDataFilepath = (ptr_ConfigGetSharedDataFilepath)
+                dlsym(RTLD_DEFAULT, "ConfigGetSharedDataFilepath");
+    if (ConfigGetSharedDataFilepath == NULL)
+    {
+        ConfigGetSharedDataFilepath = fallback_shared_data_filepath;
+        LOG(LOG_WARNING, "ConfigGetSharedDataFilepath ausente; usando caminho local de fallback.\n");
+    }
 
     /* Resolve the normal core exports first, then use ae-bridge callbacks.
        Android builds may hide VidExt_* from the core handle even though the

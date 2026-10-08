@@ -244,14 +244,14 @@ void Config_LoadRomConfig(unsigned char* header)
 
     if (ConfigGetSharedDataFilepath == NULL)
     {
-        LOG(LOG_WARNING, "ConfigGetSharedDataFilepath ausente; ignorando configuraÃ§Ã£o especÃ­fica da ROM.\n");
+        LOG(LOG_WARNING, "ConfigGetSharedDataFilepath ausente; ignorando configuração específica da ROM.\n");
         return;
     }
 
     const char *filename = ConfigGetSharedDataFilepath("gln64rom.conf");
     if (filename == NULL || filename[0] == '\0')
     {
-        LOG(LOG_WARNING, "Caminho de gln64rom.conf vazio; usando configuraÃ§Ã£o global.\n");
+        LOG(LOG_WARNING, "Caminho de gln64rom.conf vazio; usando configuração global.\n");
         return;
     }
     FILE *f = fopen(filename,"r");
@@ -305,7 +305,7 @@ void Config_LoadConfig()
 
     if (ConfigGetSharedDataFilepath == NULL)
     {
-        LOG(LOG_WARNING, "ConfigGetSharedDataFilepath ausente; usando somente valores padrÃ£o.\n");
+        LOG(LOG_WARNING, "ConfigGetSharedDataFilepath ausente; usando somente valores padrão.\n");
         return;
     }
 
@@ -313,7 +313,7 @@ void Config_LoadConfig()
     const char *filename = ConfigGetSharedDataFilepath("gln64.conf");
     if (filename == NULL || filename[0] == '\0')
     {
-        LOG(LOG_WARNING, "Caminho de gln64.conf vazio; usando valores padrÃ£o.\n");
+        LOG(LOG_WARNING, "Caminho de gln64.conf vazio; usando valores padrão.\n");
         return;
     }
     f = fopen(filename, "r");

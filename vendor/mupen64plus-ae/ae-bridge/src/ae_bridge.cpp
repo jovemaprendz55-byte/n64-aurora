@@ -714,20 +714,23 @@ extern DECLSPEC m64p_error VidExtFuncInit()
     memcpy(windowAttribList, defaultWindowAttribs, sizeof(defaultWindowAttribs));
     memcpy(contextAttribs, defaultContextAttribs, sizeof(defaultContextAttribs));
 
-    // O renderizador GLideN64 usado neste port é OpenGL ES no Android. Sem
-    // selecionar a API antes da criação do contexto, alguns drivers aceitam
-    // a configuração mas não apresentam frames na SurfaceView.
-    if (eglBindAPI(EGL_OPENGL_ES_API) != EGL_TRUE) {
-        LOGE("eglBindAPI(EGL_OPENGL_ES_API) failed: %d", eglGetError());
-        return M64ERR_INVALID_STATE;
-    }
-
     if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
-        LOGE("eglGetDisplay() returned error %d", eglGetError());
+        lastSwapError = eglGetError();
+        LOGE("eglGetDisplay() returned error %d", lastSwapError);
         return M64ERR_INVALID_STATE;
     }
     if (!eglInitialize(display, 0, 0)) {
-        LOGE("eglInitialize() returned error %d", eglGetError());
+        lastSwapError = eglGetError();
+        LOGE("eglInitialize() returned error %d", lastSwapError);
+        return M64ERR_INVALID_STATE;
+    }
+
+    // Android 16 drivers are more reliable when the display is initialized
+    // before selecting the client API. Calling eglBindAPI first can return
+    // EGL_NOT_INITIALIZED even though the default display is valid.
+    if (eglBindAPI(EGL_OPENGL_ES_API) != EGL_TRUE) {
+        lastSwapError = eglGetError();
+        LOGE("eglBindAPI(EGL_OPENGL_ES_API) failed: %d", lastSwapError);
         return M64ERR_INVALID_STATE;
     }
 

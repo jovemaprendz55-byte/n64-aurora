@@ -714,6 +714,12 @@ extern DECLSPEC m64p_error VidExtFuncInit()
     memcpy(windowAttribList, defaultWindowAttribs, sizeof(defaultWindowAttribs));
     memcpy(contextAttribs, defaultContextAttribs, sizeof(defaultContextAttribs));
 
+    // Some Android 16 vendor drivers require the client API to be selected
+    // before obtaining the platform display. Ignore the result here; the
+    // definitive error is checked again after display initialization.
+    eglBindAPI(EGL_OPENGL_ES_API);
+    static const EGLint platformDisplayAttributes[] = {EGL_NONE};
+
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (display == EGL_NO_DISPLAY || !eglInitialize(display, 0, 0)) {
         lastSwapError = eglGetError();
@@ -730,6 +736,12 @@ extern DECLSPEC m64p_error VidExtFuncInit()
         if (getPlatformDisplay == nullptr)
             getPlatformDisplay = reinterpret_cast<GetPlatformDisplayProc>(
                 eglGetProcAddress("eglGetPlatformDisplayKHR"));
+        if (getPlatformDisplay == nullptr)
+            getPlatformDisplay = reinterpret_cast<GetPlatformDisplayProc>(
+                dlsym(RTLD_DEFAULT, "eglGetPlatformDisplay"));
+        if (getPlatformDisplay == nullptr)
+            getPlatformDisplay = reinterpret_cast<GetPlatformDisplayProc>(
+                dlsym(RTLD_DEFAULT, "eglGetPlatformDisplayKHR"));
         if (getPlatformDisplay == nullptr) {
             LOGE("Android platform EGL display entry point is unavailable");
             return M64ERR_INVALID_STATE;
@@ -739,14 +751,14 @@ extern DECLSPEC m64p_error VidExtFuncInit()
         // token EGL_DEFAULT_DISPLAY. Passing nullptr is rejected by several
         // Android 16 vendor EGL implementations with EGL_NOT_INITIALIZED.
         display = getPlatformDisplay(EGL_PLATFORM_ANDROID_KHR,
-                                     reinterpret_cast<void*>(EGL_DEFAULT_DISPLAY), nullptr);
+                                     reinterpret_cast<void*>(EGL_DEFAULT_DISPLAY), platformDisplayAttributes);
         if (display == EGL_NO_DISPLAY || !eglInitialize(display, 0, 0)) {
             lastSwapError = eglGetError();
             LOGW("eglGetPlatformDisplay(EGL_DEFAULT_DISPLAY) failed: %d; retrying null native display", lastSwapError);
             if (display != EGL_NO_DISPLAY)
                 eglTerminate(display);
 
-            display = getPlatformDisplay(EGL_PLATFORM_ANDROID_KHR, nullptr, nullptr);
+            display = getPlatformDisplay(EGL_PLATFORM_ANDROID_KHR, nullptr, platformDisplayAttributes);
             if (display == EGL_NO_DISPLAY || !eglInitialize(display, 0, 0)) {
                 lastSwapError = eglGetError();
                 LOGE("eglGetPlatformDisplayKHR/eglInitialize failed: %d", lastSwapError);

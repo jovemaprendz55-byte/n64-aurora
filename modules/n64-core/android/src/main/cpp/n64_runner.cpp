@@ -295,10 +295,37 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
 
   // O frontend Mupen64Plus só aceita CoreAttachPlugin depois de ROM_OPEN;
   // plugin_start_gfx também precisa dos dados da ROM para criar a saída de vídeo.
-  if (g_attach_plugin(kPluginGfx, g_gfx) != 0 ||
-      (g_input != nullptr && g_attach_plugin(kPluginInput, g_input) != 0) ||
-      g_attach_plugin(kPluginRsp, g_rsp) != 0) {
-    set_error("O core Mupen64Plus-AE recusou a inicialização de um plugin após abrir a ROM.");
+  const int gfx_result = g_attach_plugin(kPluginGfx, g_gfx);
+  if (gfx_result != 0) {
+    std::string detail = g_core_debug_error;
+    if (g_get_video_diagnostics != nullptr) {
+      const char* diagnostics = g_get_video_diagnostics();
+      if (diagnostics != nullptr && diagnostics[0] != '\0') {
+        if (!detail.empty()) detail += " | ";
+        detail += diagnostics;
+      }
+    }
+    set_error(detail.empty()
+                  ? "O plugin gráfico GFX falhou ao inicializar."
+                  : std::string("Plugin gráfico GFX recusado: ") + detail);
+    g_shutdown();
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_starting = false;
+    close_plugins();
+    return env->NewStringUTF(g_last_error.c_str());
+  }
+  const int input_result = g_input != nullptr ? g_attach_plugin(kPluginInput, g_input) : 0;
+  if (input_result != 0) {
+    set_error("O plugin de entrada recusou a inicialização.");
+    g_shutdown();
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_starting = false;
+    close_plugins();
+    return env->NewStringUTF(g_last_error.c_str());
+  }
+  const int rsp_result = g_attach_plugin(kPluginRsp, g_rsp);
+  if (rsp_result != 0) {
+    set_error("O plugin RSP recusou a inicialização.");
     g_shutdown();
     std::lock_guard<std::mutex> lock(g_mutex);
     g_starting = false;

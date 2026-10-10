@@ -735,11 +735,23 @@ extern DECLSPEC m64p_error VidExtFuncInit()
             return M64ERR_INVALID_STATE;
         }
 
-        display = getPlatformDisplay(EGL_PLATFORM_ANDROID_KHR, nullptr, nullptr);
+        // Android's platform display entry point expects the native display
+        // token EGL_DEFAULT_DISPLAY. Passing nullptr is rejected by several
+        // Android 16 vendor EGL implementations with EGL_NOT_INITIALIZED.
+        display = getPlatformDisplay(EGL_PLATFORM_ANDROID_KHR,
+                                     reinterpret_cast<void*>(EGL_DEFAULT_DISPLAY), nullptr);
         if (display == EGL_NO_DISPLAY || !eglInitialize(display, 0, 0)) {
             lastSwapError = eglGetError();
-            LOGE("eglGetPlatformDisplayKHR/eglInitialize failed: %d", lastSwapError);
-            return M64ERR_INVALID_STATE;
+            LOGW("eglGetPlatformDisplay(EGL_DEFAULT_DISPLAY) failed: %d; retrying null native display", lastSwapError);
+            if (display != EGL_NO_DISPLAY)
+                eglTerminate(display);
+
+            display = getPlatformDisplay(EGL_PLATFORM_ANDROID_KHR, nullptr, nullptr);
+            if (display == EGL_NO_DISPLAY || !eglInitialize(display, 0, 0)) {
+                lastSwapError = eglGetError();
+                LOGE("eglGetPlatformDisplayKHR/eglInitialize failed: %d", lastSwapError);
+                return M64ERR_INVALID_STATE;
+            }
         }
     }
 

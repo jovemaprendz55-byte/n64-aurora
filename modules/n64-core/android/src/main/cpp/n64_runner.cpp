@@ -57,6 +57,7 @@ GetVideoDiagnostics g_get_video_diagnostics = nullptr;
 bool g_running = false;
 bool g_starting = false;
 std::string g_last_error;
+std::string g_core_debug_error;
 std::array<jboolean, 16> g_button_state{};
 double g_analog_x = 0.0;
 double g_analog_y = 0.0;
@@ -65,6 +66,9 @@ void core_debug_callback(void*, int level, const char* message) {
   const int android_level = level <= 1 ? ANDROID_LOG_ERROR : ANDROID_LOG_DEBUG;
   __android_log_print(android_level, "Mupen64PlusCore", "level=%d %s", level,
                       message == nullptr ? "(mensagem nula)" : message);
+  if (level <= 1 && message != nullptr && message[0] != '\0') {
+    g_core_debug_error = message;
+  }
 }
 
 void set_error(const std::string& error) {
@@ -196,6 +200,26 @@ bool read_rom(const std::string& path, std::vector<unsigned char>& bytes) {
     set_error("Não foi possível ler a ROM selecionada.");
     return false;
   }
+  if (bytes.size() < 4) {
+    set_error("A ROM selecionada é menor que o cabeçalho N64.");
+    return false;
+  }
+  const unsigned char b0 = bytes[0];
+  const unsigned char b1 = bytes[1];
+  const unsigned char b2 = bytes[2];
+  const unsigned char b3 = bytes[3];
+  const bool valid_header =
+      (b0 == 0x80 && b1 == 0x37 && b2 == 0x12 && b3 == 0x40) ||
+      (b0 == 0x37 && b1 == 0x80 && b2 == 0x40 && b3 == 0x12) ||
+      (b0 == 0x40 && b1 == 0x12 && b2 == 0x37 && b3 == 0x80);
+  __android_log_print(ANDROID_LOG_INFO, kTag,
+                      "ROM preparada: path=%s size=%zu header=%02X%02X%02X%02X valid=%s",
+                      path.c_str(), bytes.size(), b0, b1, b2, b3,
+                      valid_header ? "yes" : "no");
+  if (!valid_header) {
+    set_error("O arquivo não tem um cabeçalho de ROM Nintendo 64 válido.");
+    return false;
+  }
   return true;
 }
 
@@ -255,8 +279,13 @@ Java_expo_modules_n64core_Mupen64Bridge_nativeStart(JNIEnv* env, jobject, jstrin
     return env->NewStringUTF(g_last_error.c_str());
   }
 
+  g_core_debug_error.clear();
   if (g_do_command(kCommandRomOpen, static_cast<int>(rom.size()), rom.data()) != 0) {
-    set_error("O core não conseguiu abrir a ROM selecionada.");
+    if (g_core_debug_error.empty()) {
+      set_error("O core não conseguiu abrir a ROM selecionada.");
+    } else {
+      set_error(std::string("O core recusou a ROM: ") + g_core_debug_error);
+    }
     g_shutdown();
     std::lock_guard<std::mutex> lock(g_mutex);
     g_starting = false;
